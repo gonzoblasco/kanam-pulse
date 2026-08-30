@@ -1,8 +1,6 @@
 # Project .gitignore
 # .knowledge/ lives in the workspace (projects/<slug>/.knowledge) and is symlinked
 # into this clone for local convenience. NEVER commit it here.
-.knowledge/
-.knowledge
 
 # Node
 node_modules/
