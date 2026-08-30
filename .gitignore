@@ -1,6 +1,7 @@
 # Project .gitignore
-# .knowledge/ lives in the workspace (projects/<slug>/.knowledge) and is symlinked
-# into this clone for local convenience. NEVER commit it here.
+# .knowledge/ IS committed here. It exposes how we work to contributors.
+# Rule: NEVER document sensitive information (tokens, internal decisions,
+# personal notes, credentials, internal URLs, billing info, etc.).
 
 # Node
 node_modules/
