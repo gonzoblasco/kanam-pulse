@@ -6,11 +6,11 @@
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@kanam-pulse/core": "workspace:*",
+    "@kanam-pulse/core": "*",
     "fastify": "^5"
   },
   "devDependencies": {
