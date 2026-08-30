@@ -1,12 +1,15 @@
 # Project .gitignore
-# .knowledge/ is tracked by the workspace git, not the project git
-.knowledge/
+# NOTE: .knowledge/ is NOT listed here on purpose.
+# This .gitignore is also parsed by the workspace git, and listing .knowledge/ would
+# break workspace blob tracking (double-git). The project-local exclusion lives in
+# .git/info/exclude instead. Do not re-add .knowledge/ to this file.
 
 # Node
 node_modules/
 dist/
 .next/
 .turbo/
+coverage/
 
 # Env
 .env
