@@ -1,0 +1,17 @@
+# Project .gitignore
+# .knowledge/ is tracked by the workspace git, not the project git
+.knowledge/
+
+# Node
+node_modules/
+dist/
+.next/
+.turbo/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
