@@ -1,8 +1,8 @@
 # Project .gitignore
-# NOTE: .knowledge/ is NOT listed here on purpose.
-# This .gitignore is also parsed by the workspace git, and listing .knowledge/ would
-# break workspace blob tracking (double-git). The project-local exclusion lives in
-# .git/info/exclude instead. Do not re-add .knowledge/ to this file.
+# .knowledge/ lives in the workspace (projects/<slug>/.knowledge) and is symlinked
+# into this clone for local convenience. NEVER commit it here.
+.knowledge/
+.knowledge
 
 # Node
 node_modules/
