@@ -8,7 +8,7 @@ A local macOS companion app that shows the real pulse of the machine and lets th
 
 ## Non-Goals (v1)
 
-- No Electron/desktop packaging (server + browser)
+- No Electron/desktop packaging (server + browser). Backlog post-v1: evaluar envoltorio nativo (Electron/Tauri/React Native/nativa) SOLO when the web v1 is complete and polished - distribution decision, not a product decision today
 - No macOS App Store distribution
 - No remote/cloud sync
 - No scheduled automatic cleaning (manual with consent only)
