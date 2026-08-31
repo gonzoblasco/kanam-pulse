@@ -1,17 +1,23 @@
 // useMemoryStream.ts
 import { useState, useEffect } from 'react';
 
+interface MetricPayload {
+  memory: number | null;
+  load: number;
+  unit: string;
+}
+
 export function useMemoryStream() {
-  const [data, setData] = useState(null);
+  const [data, setData] = useState<MetricPayload | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const eventSource = new EventSource('/api/metrics/stream');
-    
-    const onMessage = (event) => {
+
+    const onMessage = (event: MessageEvent) => {
       try {
-        const payload = JSON.parse(event.data);
+        const payload: MetricPayload = JSON.parse(event.data);
         // Update state with lightweight metrics
         setData(payload);
       } catch (e) {
@@ -19,14 +25,26 @@ export function useMemoryStream() {
       }
     };
 
-    eventSource.onmessage = onMessage;
-
-    const handleClose = () => {
+    const onOpen = () => {
       setLoading(false);
+      setError(null);
     };
 
-    eventSource.onclose = handleClose;
+    // EventSource has no `onclose`: the connection is closed either by the
+    // server (readyState becomes CLOSED) or by calling close() on unmount.
+    // Track errors (e.g. server terminated the stream) via onerror instead.
+    const onError = () => {
+      if (eventSource.readyState === EventSource.CLOSED) {
+        setLoading(false);
+      }
+    };
 
+    eventSource.onmessage = onMessage;
+    eventSource.onopen = onOpen;
+    eventSource.onerror = onError;
+
+    // Cleanup on unmount: closes the underlying connection, which also
+    // prevents React from setting state on an unmounted component.
     return () => {
       eventSource.close();
     };

@@ -6,7 +6,17 @@ import { createRequire } from 'node:module';
 import { execFile } from 'node:child_process';
 import os from 'node:os';
 import Fastify from 'fastify';
-import { CHECKS, runBattery, readHistory } from '@kanam-pulse/core';
+import {
+  CHECKS,
+  runBattery,
+  readHistory,
+  getSafeCacheTargets,
+  scanSafeCaches,
+  getDirSizeBytes,
+  clearDirContents,
+  scanHeavyProcesses,
+  killProcess,
+} from '@kanam-pulse/core';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -68,6 +78,106 @@ export async function buildApp() {
   app.get('/api/history', async () => {
     const history = readHistory();
     return { history };
+  });
+
+  // ---- Fixes with consent ----
+  // Read-only scan: nothing is executed here, only reported.
+  app.get('/api/fixes/scan', async () => {
+    const [caches, processes] = await Promise.all([
+      scanSafeCaches(),
+      scanHeavyProcesses(20),
+    ]);
+    return { caches, processes };
+  });
+
+  // Dry-run: estimates what a given set of targets would free/kill.
+  // Never executes a cleanup or kill; purely reports.
+  app.post('/api/fixes/dry-run', async (request) => {
+    const rawTargets = Array.isArray(request.body?.targets) ? request.body.targets : [];
+    const cacheTargets = await getSafeCacheTargets();
+    const byId = new Map(cacheTargets.map((t) => [t.id, t]));
+
+    const caches = [];
+    const processPids = [];
+    let wouldFreeBytes = 0;
+
+    for (const entry of rawTargets) {
+      const target = String(entry);
+      const cache = byId.get(target);
+      if (cache) {
+        const sizeBytes = await getDirSizeBytes(cache.path);
+        caches.push({ ...cache, sizeBytes });
+        wouldFreeBytes += sizeBytes;
+        continue;
+      }
+      const pid = Number(target);
+      if (Number.isInteger(pid) && pid > 0) {
+        processPids.push(pid);
+      }
+    }
+
+    // Only report processes from a current scan; never touch anything.
+    const heavy = await scanHeavyProcesses(20);
+    const byPid = new Map(heavy.map((p) => [p.pid, p]));
+    const processes = processPids
+      .filter((pid) => byPid.has(pid))
+      .map((pid) => byPid.get(pid));
+
+    return { wouldFreeBytes, caches, processes };
+  });
+
+  // Apply: destructive actions gated behind explicit confirmation.
+  app.post('/api/fixes/apply', async (request, reply) => {
+    const body = request.body ?? {};
+    if (body.confirmed !== true) {
+      reply.code(400);
+      return { error: 'consent required' };
+    }
+
+    const cacheIds = Array.isArray(body.caches) ? body.caches.map(String) : [];
+    const pids = Array.isArray(body.processes)
+      ? body.processes.map(Number).filter((n) => Number.isInteger(n) && n > 0)
+      : [];
+
+    const cacheTargets = await getSafeCacheTargets();
+    const byId = new Map(cacheTargets.map((t) => [t.id, t]));
+
+    const errors = [];
+    let freedBytes = 0;
+    const killedPids = [];
+
+    for (const id of cacheIds) {
+      const target = byId.get(id);
+      if (!target) {
+        errors.push(`unknown cache target: ${id}`);
+        continue;
+      }
+      try {
+        const res = await clearDirContents(target.path);
+        if (res && res.ok) {
+          freedBytes += res.freedBytes ?? 0;
+        } else {
+          errors.push(res?.error || `failed to clear cache: ${id}`);
+        }
+      } catch (err) {
+        errors.push(err.message);
+      }
+    }
+
+    for (const pid of pids) {
+      try {
+        const res = await killProcess(pid);
+        if (res && res.ok) {
+          killedPids.push(pid);
+        } else {
+          errors.push(res?.error || `failed to kill process: ${pid}`);
+        }
+      } catch (err) {
+        errors.push(err.message);
+      }
+    }
+
+    return { freedBytes, killedPids, errors };
   });
 
   app.get('/api/metrics/stream', async (request, reply) => {

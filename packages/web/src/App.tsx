@@ -1,35 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import HealthScoreCard from './components/HealthScoreCard';
-import './styles/App.css';
+import FixesPanel from './components/FixesPanel';
 
 function App() {
-  const [loading, setLoading] = useState(true);
-  const [health, setHealth] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const checkHealth = async () => {
-      try {
-        const res = await fetch('/api/health');
-        if (!res.ok) throw new Error('API call failed');
-        const data = await res.json();
-        setHealth(data);
-      } catch (e) {
-        setError(e.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    checkHealth();
-  }, []);
-
-  if (loading) return <h1>Loading...</h1>;
-  if (error) return <h1>Error: {error}</h1>;
-
   return (
-    <div>
+    <div style={{ padding: '20px' }}>
       <h1>Kanam Pulse Dashboard</h1>
-      <HealthScoreCard health={health} />
+      <HealthScoreCard title="System Health" />
+      <FixesPanel />
     </div>
   );
 }
