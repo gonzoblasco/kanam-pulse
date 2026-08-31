@@ -10,3 +10,4 @@ export * from './core/reporter.js';
 export * from './fix/cleaner.js';
 export * from './fix/processes.js';
 export * from './utils/format.js';
+export * from './audit/summary.js';

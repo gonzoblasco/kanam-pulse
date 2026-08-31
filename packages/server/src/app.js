@@ -16,6 +16,8 @@ import {
   clearDirContents,
   scanHeavyProcesses,
   killProcess,
+  isOllamaAvailable,
+  explainAudit,
 } from '@kanam-pulse/core';
 
 const require = createRequire(import.meta.url);
@@ -78,6 +80,27 @@ export async function buildApp() {
   app.get('/api/history', async () => {
     const history = readHistory();
     return { history };
+  });
+
+  // ---- Explain this audit (optional local Ollama summary) ----
+  // If a local Ollama instance is running, summarize a battery run in human
+  // language. When it is not available the feature reports `available: false`
+  // so the UI can hide it - this endpoint never breaks the audit flow.
+  app.post('/api/audit/explain', async (request) => {
+    const body = request.body ?? {};
+    const battery = body && typeof body.battery === 'object' && body.battery ? body.battery : null;
+
+    if (!(await isOllamaAvailable())) {
+      return { available: false, error: 'ollama not available' };
+    }
+
+    // Prefer a battery supplied by the client; otherwise run a fresh one.
+    const target = battery ?? (await runBattery());
+    const result = await explainAudit(target);
+    if (!result.ok) {
+      return { available: true, error: result.error };
+    }
+    return { available: true, explanation: result.explanation };
   });
 
   // ---- Fixes with consent ----
