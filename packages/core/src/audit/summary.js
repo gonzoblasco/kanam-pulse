@@ -185,6 +185,11 @@ export async function explainAudit(
           model,
           prompt,
           stream: false,
+          // Disable chain-of-thought reasoning: many local models (Qwen 3.5,
+          // GLM) emit a long `thinking` field that consumes num_predict and
+          // leaves `response` empty. `think:false` keeps the budget for the
+          // visible answer. Unknown models ignore the flag in Ollama.
+          think: false,
           options: { num_predict: maxTokens },
         }),
         signal,

@@ -183,6 +183,7 @@ describe('explainAudit', () => {
     expect(body).toMatchObject({
       model: 'm',
       stream: false,
+      think: false,
       options: { num_predict: 100 },
     });
     expect(typeof body.prompt).toBe('string');
