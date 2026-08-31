@@ -9,7 +9,10 @@
 import os from 'node:os';
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
-const DEFAULT_MODEL = 'qwen3.5:9b-mlx';
+// Fast cloud model via Ollama (Gonzo's default). Reasoning disabled per request
+// (see explainAudit body) so the visible answer gets the whole token budget.
+// Override with KANAM_PULSE_AI_MODEL env if desired.
+const DEFAULT_MODEL = process.env.KANAM_PULSE_AI_MODEL || 'deepseek-v4-flash:cloud';
 
 /**
  * Strip path-like content (absolute paths, home-dir references) from a text
@@ -155,7 +158,7 @@ export async function isOllamaAvailable(baseUrl = DEFAULT_BASE_URL) {
  * @param {object} battery - result of runBattery()
  * @param {object} [options]
  * @param {string} [options.baseUrl='http://localhost:11434']
- * @param {string} [options.model='qwen3.5:9b-mlx']
+ * @param {string} [options.model='deepseek-v4-flash:cloud'] - Ollama model (or $KANAM_PULSE_AI_MODEL)
  * @param {number} [options.maxTokens=300]
  * @param {number} [options.timeoutMs=30000] - generation can take a while.
  * @returns {Promise<{ok:boolean, explanation?:string, error?:string}>}
