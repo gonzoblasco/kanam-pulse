@@ -52,20 +52,24 @@ export async function runBattery(checkIds = []) {
   const elapsedMs = Date.now() - startedAt;
 
   // Weighted overall score using only checks that ran successfully.
-  const weighted = results.reduce((acc, r) => {
-    const w = WEIGHTS[r.id] ?? 0.1;
-    return { weightSum: acc.weightSum + w, scoreSum: acc.scoreSum + r.score * w };
-  }, { weightSum: 0, scoreSum: 0 });
+  const weighted = results.reduce(
+    (acc, r) => {
+      const w = WEIGHTS[r.id] ?? 0.1;
+      return {
+        weightSum: acc.weightSum + w,
+        scoreSum: acc.scoreSum + r.score * w,
+      };
+    },
+    { weightSum: 0, scoreSum: 0 },
+  );
 
-  const overall = weighted.weightSum > 0
-    ? Math.round(weighted.scoreSum / weighted.weightSum)
-    : 0;
+  const overall =
+    weighted.weightSum > 0
+      ? Math.round(weighted.scoreSum / weighted.weightSum)
+      : 0;
 
   const worst = Math.min(...results.map((r) => r.score));
-  const status =
-    worst < 40 ? 'degraded'
-    : worst < 70 ? 'attention'
-    : 'healthy';
+  const status = worst < 40 ? 'degraded' : worst < 70 ? 'attention' : 'healthy';
 
   return {
     overall,
@@ -75,8 +79,10 @@ export async function runBattery(checkIds = []) {
     runInfo: {
       elapsedMs,
       total: results.length,
-      passed: results.filter((r) => r.status !== 'error' && r.score >= 70).length,
-      warnings: results.filter((r) => r.status !== 'error' && r.score < 70).length,
+      passed: results.filter((r) => r.status !== 'error' && r.score >= 70)
+        .length,
+      warnings: results.filter((r) => r.status !== 'error' && r.score < 70)
+        .length,
       errors: results.filter((r) => r.status === 'error').length,
     },
   };
@@ -94,5 +100,7 @@ export function collectSuggestions(batteryResult) {
       all.push({ check: check.id, ...s });
     }
   }
-  return all.sort((a, b) => (order[a.priority] ?? 3) - (order[b.priority] ?? 3));
+  return all.sort(
+    (a, b) => (order[a.priority] ?? 3) - (order[b.priority] ?? 3),
+  );
 }

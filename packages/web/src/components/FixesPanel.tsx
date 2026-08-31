@@ -3,14 +3,19 @@
 // confirm dialog -> apply. Every target has an associated <label>
 // (WCAG 2.2 AA). Apply stays disabled until a dry-run has been performed.
 
-import React, { useMemo, useState } from 'react';
+import type React from 'react';
+import { useMemo, useState } from 'react';
 import { useFixes } from '../hooks/useFixes';
 import { useI18n } from '../i18n/useI18n';
-import ConfirmDialog from './ConfirmDialog';
 import type { CacheTarget, HeavyProcess } from '../types/api';
+import ConfirmDialog from './ConfirmDialog';
 
 interface FixesPanelProps {
-  onResult?: (result: { freedBytes: number; killedPids: number[]; errors: string[] }) => void;
+  onResult?: (result: {
+    freedBytes: number;
+    killedPids: number[];
+    errors: string[];
+  }) => void;
 }
 
 const panelStyle: React.CSSProperties = {
@@ -25,7 +30,7 @@ const sectionStyle: React.CSSProperties = {
   marginTop: '16px',
 };
 
-const rowStyle: React.CSSProperties = {
+const _rowStyle: React.CSSProperties = {
   display: 'flex',
   alignItems: 'baseline',
   gap: '8px',
@@ -83,7 +88,14 @@ function TargetCheckbox({
   label: string;
 }) {
   return (
-    <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', padding: '4px 0' }}>
+    <label
+      style={{
+        display: 'flex',
+        alignItems: 'flex-start',
+        gap: '8px',
+        padding: '4px 0',
+      }}
+    >
       <input
         type="checkbox"
         name={name}
@@ -101,7 +113,9 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
   const { t } = useI18n();
   const fixes = useFixes();
   const [selectedCaches, setSelectedCaches] = useState<Set<string>>(new Set());
-  const [selectedProcesses, setSelectedProcesses] = useState<Set<number>>(new Set());
+  const [selectedProcesses, setSelectedProcesses] = useState<Set<number>>(
+    new Set(),
+  );
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const scanResult = fixes.scanResult;
@@ -152,7 +166,10 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
 
   const handleConfirm = async () => {
     setDialogOpen(false);
-    const result = await fixes.apply(Array.from(selectedCaches), Array.from(selectedProcesses));
+    const result = await fixes.apply(
+      Array.from(selectedCaches),
+      Array.from(selectedProcesses),
+    );
     if (result) onResult?.(result);
   };
 
@@ -163,9 +180,10 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
         {t('fixes.wouldFree')}{' '}
         <strong>{formatBytes(dryRunResult.wouldFreeBytes)}</strong>
       </p>
-      {dryRunResult.caches.length === 0 && dryRunResult.processes.length === 0 && (
-        <p>{t('fixes.noTargetsResolved')}</p>
-      )}
+      {dryRunResult.caches.length === 0 &&
+        dryRunResult.processes.length === 0 && (
+          <p>{t('fixes.noTargetsResolved')}</p>
+        )}
     </div>
   ) : null;
 
@@ -173,7 +191,12 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
     <div style={panelStyle}>
       <h2>{t('fixes.title')}</h2>
       <div style={buttonRowStyle}>
-        <button type="button" onClick={handleScan} disabled={fixes.scanning} style={buttonBase}>
+        <button
+          type="button"
+          onClick={handleScan}
+          disabled={fixes.scanning}
+          style={buttonBase}
+        >
           {fixes.scanning ? t('fixes.scanning') : t('fixes.scan')}
         </button>
         <button
@@ -200,63 +223,61 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
       )}
 
       {scanResult ? (
-        <>
-          {scanResult.caches.length === 0 && scanResult.processes.length === 0 ? (
-            <p>{t('fixes.noneFound')}</p>
-          ) : (
-            <>
-              {scanResult.caches.length > 0 && (
-                <fieldset style={sectionStyle}>
-                  <legend>{t('fixes.caches')}</legend>
-                  {scanResult.caches.map((cache: CacheTarget) => (
-                    <TargetCheckbox
-                      key={cache.id}
-                      name="cache-targets"
-                      value={cache.id}
-                      checked={selectedCaches.has(cache.id)}
-                      onChange={(checked) => {
-                        setSelectedCaches((prev) => {
-                          const next = new Set(prev);
-                          if (checked) next.add(cache.id);
-                          else next.delete(cache.id);
-                          return next;
-                        });
-                      }}
-                      label={`${cache.label} (${formatBytes(cache.sizeBytes)}) - ${cache.description}`}
-                    />
-                  ))}
-                </fieldset>
-              )}
-              {scanResult.processes.length > 0 && (
-                <fieldset style={sectionStyle}>
-                  <legend>{t('fixes.heavyProcesses')}</legend>
-                  {scanResult.processes.map((proc: HeavyProcess) => (
-                    <TargetCheckbox
-                      key={proc.pid}
-                      name="process-targets"
-                      value={String(proc.pid)}
-                      checked={selectedProcesses.has(proc.pid)}
-                      onChange={(checked) => {
-                        setSelectedProcesses((prev) => {
-                          const next = new Set(prev);
-                          if (checked) next.add(proc.pid);
-                          else next.delete(proc.pid);
-                          return next;
-                        });
-                      }}
-                      label={t('fixes.processLabel', {
-                        pid: proc.pid,
-                        command: proc.command,
-                        cpuPct: proc.cpuPct,
-                        memPct: proc.memPct,
-                      })}
-                    />
-                  ))}
-                </fieldset>
-              )}
-            </>
-          )}
-        </>
+        scanResult.caches.length === 0 && scanResult.processes.length === 0 ? (
+          <p>{t('fixes.noneFound')}</p>
+        ) : (
+          <>
+            {scanResult.caches.length > 0 && (
+              <fieldset style={sectionStyle}>
+                <legend>{t('fixes.caches')}</legend>
+                {scanResult.caches.map((cache: CacheTarget) => (
+                  <TargetCheckbox
+                    key={cache.id}
+                    name="cache-targets"
+                    value={cache.id}
+                    checked={selectedCaches.has(cache.id)}
+                    onChange={(checked) => {
+                      setSelectedCaches((prev) => {
+                        const next = new Set(prev);
+                        if (checked) next.add(cache.id);
+                        else next.delete(cache.id);
+                        return next;
+                      });
+                    }}
+                    label={`${cache.label} (${formatBytes(cache.sizeBytes)}) - ${cache.description}`}
+                  />
+                ))}
+              </fieldset>
+            )}
+            {scanResult.processes.length > 0 && (
+              <fieldset style={sectionStyle}>
+                <legend>{t('fixes.heavyProcesses')}</legend>
+                {scanResult.processes.map((proc: HeavyProcess) => (
+                  <TargetCheckbox
+                    key={proc.pid}
+                    name="process-targets"
+                    value={String(proc.pid)}
+                    checked={selectedProcesses.has(proc.pid)}
+                    onChange={(checked) => {
+                      setSelectedProcesses((prev) => {
+                        const next = new Set(prev);
+                        if (checked) next.add(proc.pid);
+                        else next.delete(proc.pid);
+                        return next;
+                      });
+                    }}
+                    label={t('fixes.processLabel', {
+                      pid: proc.pid,
+                      command: proc.command,
+                      cpuPct: proc.cpuPct,
+                      memPct: proc.memPct,
+                    })}
+                  />
+                ))}
+              </fieldset>
+            )}
+          </>
+        )
       ) : (
         !fixes.scanning && <p>{t('fixes.scanPrompt')}</p>
       )}
@@ -266,7 +287,9 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
       {fixes.applyResult && (
         <div role="status" aria-live="polite" style={sectionStyle}>
           <h4>{t('fixes.applyResultHeading')}</h4>
-          <p>{t('fixes.freed')} {formatBytes(fixes.applyResult.freedBytes)}</p>
+          <p>
+            {t('fixes.freed')} {formatBytes(fixes.applyResult.freedBytes)}
+          </p>
           <p>
             {t('fixes.killedPids')}{' '}
             {fixes.applyResult.killedPids.join(', ') || t('fixes.none')}
@@ -275,8 +298,8 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
             <div>
               <strong>{t('fixes.errors')}</strong>
               <ul>
-                {fixes.applyResult.errors.map((err, i) => (
-                  <li key={i}>{err}</li>
+                {fixes.applyResult.errors.map((err) => (
+                  <li key={err}>{err}</li>
                 ))}
               </ul>
             </div>

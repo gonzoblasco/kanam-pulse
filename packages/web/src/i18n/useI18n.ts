@@ -14,7 +14,7 @@
 // which keeps the component tree simple. Tests run with the 'es' default.
 
 import { useCallback, useSyncExternalStore } from 'react';
-import { strings, type Locale, type TranslationKey } from './strings';
+import { type Locale, strings, type TranslationKey } from './strings';
 
 const STORAGE_KEY = 'locale';
 const DEFAULT_LOCALE: Locale = 'es';

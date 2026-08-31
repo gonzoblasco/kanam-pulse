@@ -1,5 +1,5 @@
 // useHealthData.ts
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { HealthRunData } from '../types/api';
 
 export function useHealthData() {
@@ -11,7 +11,9 @@ export function useHealthData() {
     const fetchData = async () => {
       try {
         // CONSUME /api/run en lugar de /api/health para obtener el score y el status
-        const res = await fetch('/api/run?checks=disk,memory,cpu,security,network');
+        const res = await fetch(
+          '/api/run?checks=disk,memory,cpu,security,network',
+        );
         if (!res.ok) throw new Error('API run check failed');
         const data: HealthRunData = await res.json();
         setHealth(data);

@@ -3,7 +3,7 @@
 // POST /api/fixes/apply). Every destructive core action is mocked so tests
 // never clear real caches or kill real processes.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@kanam-pulse/core', async (importOriginal) => {
   const actual = await importOriginal();
@@ -18,15 +18,15 @@ vi.mock('@kanam-pulse/core', async (importOriginal) => {
   };
 });
 
-import { buildApp } from '../src/app.js';
 import {
-  getSafeCacheTargets,
-  scanSafeCaches,
-  getDirSizeBytes,
   clearDirContents,
-  scanHeavyProcesses,
+  getDirSizeBytes,
+  getSafeCacheTargets,
   killProcess,
+  scanHeavyProcesses,
+  scanSafeCaches,
 } from '@kanam-pulse/core';
+import { buildApp } from '../src/app.js';
 
 const CACHE_TARGETS = [
   {
@@ -76,7 +76,10 @@ describe('GET /api/fixes/scan', () => {
     expect(body.caches).toHaveLength(2);
     expect(body.caches[0]).toMatchObject({ id: 'npm-cache', sizeBytes: 4096 });
     expect(body.processes).toHaveLength(2);
-    expect(body.processes[0]).toMatchObject({ pid: 1234, command: 'some-heavy-app' });
+    expect(body.processes[0]).toMatchObject({
+      pid: 1234,
+      command: 'some-heavy-app',
+    });
 
     expect(scanSafeCaches).toHaveBeenCalledTimes(1);
     expect(scanHeavyProcesses).toHaveBeenCalledWith(20);
@@ -108,9 +111,15 @@ describe('POST /api/fixes/dry-run', () => {
     expect(body.wouldFreeBytes).toBe(3072);
     expect(body.caches).toHaveLength(2);
     expect(body.caches[0]).toMatchObject({ id: 'npm-cache', sizeBytes: 2048 });
-    expect(body.caches[1]).toMatchObject({ id: 'user-caches', sizeBytes: 1024 });
+    expect(body.caches[1]).toMatchObject({
+      id: 'user-caches',
+      sizeBytes: 1024,
+    });
     expect(body.processes).toHaveLength(1);
-    expect(body.processes[0]).toMatchObject({ pid: 1234, command: 'some-heavy-app' });
+    expect(body.processes[0]).toMatchObject({
+      pid: 1234,
+      command: 'some-heavy-app',
+    });
 
     expect(getDirSizeBytes).toHaveBeenCalledWith(CACHE_TARGETS[0].path);
     expect(getDirSizeBytes).toHaveBeenCalledWith(CACHE_TARGETS[1].path);
@@ -163,7 +172,10 @@ describe('POST /api/fixes/apply', () => {
 
   it('clears confirmed caches and kills confirmed pids when confirmed is true', async () => {
     vi.mocked(getSafeCacheTargets).mockResolvedValue(CACHE_TARGETS);
-    vi.mocked(clearDirContents).mockResolvedValue({ ok: true, freedBytes: 2048 });
+    vi.mocked(clearDirContents).mockResolvedValue({
+      ok: true,
+      freedBytes: 2048,
+    });
     vi.mocked(killProcess).mockResolvedValue({ ok: true });
 
     const app = await buildApp();
@@ -194,8 +206,15 @@ describe('POST /api/fixes/apply', () => {
 
   it('collects errors for unknown cache targets and failed kills', async () => {
     vi.mocked(getSafeCacheTargets).mockResolvedValue(CACHE_TARGETS);
-    vi.mocked(clearDirContents).mockResolvedValue({ ok: false, freedBytes: 0, error: 'permission denied' });
-    vi.mocked(killProcess).mockResolvedValue({ ok: false, error: 'kill failed' });
+    vi.mocked(clearDirContents).mockResolvedValue({
+      ok: false,
+      freedBytes: 0,
+      error: 'permission denied',
+    });
+    vi.mocked(killProcess).mockResolvedValue({
+      ok: false,
+      error: 'kill failed',
+    });
 
     const app = await buildApp();
     const res = await app.inject({

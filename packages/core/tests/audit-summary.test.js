@@ -2,8 +2,12 @@
 // "Explain this audit" core module: prompt building (privacy-safe),
 // Ollama availability probing, and graceful explain() handling.
 
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { buildAuditSummaryPrompt, isOllamaAvailable, explainAudit } from '../src/audit/summary.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import {
+  buildAuditSummaryPrompt,
+  explainAudit,
+  isOllamaAvailable,
+} from '../src/audit/summary.js';
 
 // Sample battery carrying hypothetical user paths in details/suggestions.
 // The prompt builder must NEVER surface these.
@@ -17,9 +21,20 @@ const batteryWithPaths = {
       name: 'Disk / Storage',
       score: 45,
       status: 'attention',
-      details: { largestFiles: [{ path: '/Users/gonzoblasco/Library/Caches/com.apple.dt.Xcode', sizeBytes: 999999 }] },
+      details: {
+        largestFiles: [
+          {
+            path: '/Users/gonzoblasco/Library/Caches/com.apple.dt.Xcode',
+            sizeBytes: 999999,
+          },
+        ],
+      },
       suggestions: [
-        { priority: 'high', action: 'Clear 12.3 GB from /Users/gonzoblasco/Library/Caches/com.apple.dt.Xcode' },
+        {
+          priority: 'high',
+          action:
+            'Clear 12.3 GB from /Users/gonzoblasco/Library/Caches/com.apple.dt.Xcode',
+        },
         { priority: 'low', action: 'Review ~/Downloads for old disk images' },
       ],
     },
@@ -91,7 +106,11 @@ describe('buildAuditSummaryPrompt', () => {
   });
 
   it('handles a battery with no checks gracefully', () => {
-    const prompt = buildAuditSummaryPrompt({ overall: 0, status: 'error', checks: [] });
+    const prompt = buildAuditSummaryPrompt({
+      overall: 0,
+      status: 'error',
+      checks: [],
+    });
     expect(prompt).toContain('0/100');
     expect(prompt).toContain('error');
     expect(prompt).toContain('(no check data)');
@@ -100,25 +119,37 @@ describe('buildAuditSummaryPrompt', () => {
 
 describe('isOllamaAvailable', () => {
   it('returns true when /api/tags responds 200 with models array', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ models: [{ name: 'qwen3.5:9b-mlx' }] }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ models: [{ name: 'qwen3.5:9b-mlx' }] }),
+      }),
+    );
     expect(await isOllamaAvailable('http://ollama.test')).toBe(true);
   });
 
   it('returns false when the fetch fails (rejected)', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('connection refused')));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('connection refused')),
+    );
     expect(await isOllamaAvailable('http://ollama.test')).toBe(false);
   });
 
   it('returns false on non-200 responses', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+    );
     expect(await isOllamaAvailable('http://ollama.test')).toBe(false);
   });
 
   it('returns false when payload has no models array', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: true, json: async () => ({}) }),
+    );
     expect(await isOllamaAvailable('http://ollama.test')).toBe(false);
   });
 });
@@ -127,41 +158,69 @@ describe('explainAudit', () => {
   it('returns {ok:true} with the response text when Ollama answers', async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ response: '  Your system looks healthy overall.  ' }),
+      json: async () => ({
+        response: '  Your system looks healthy overall.  ',
+      }),
     });
     vi.stubGlobal('fetch', fetchMock);
 
-    const result = await explainAudit(minimalBattery, { baseUrl: 'http://ollama.test', model: 'm', maxTokens: 100, timeoutMs: 1000 });
-    expect(result).toEqual({ ok: true, explanation: 'Your system looks healthy overall.' });
+    const result = await explainAudit(minimalBattery, {
+      baseUrl: 'http://ollama.test',
+      model: 'm',
+      maxTokens: 100,
+      timeoutMs: 1000,
+    });
+    expect(result).toEqual({
+      ok: true,
+      explanation: 'Your system looks healthy overall.',
+    });
 
     // POST went to /api/generate with the expected shape.
     const [url, init] = fetchMock.mock.calls[0];
     expect(url).toBe('http://ollama.test/api/generate');
     expect(init.method).toBe('POST');
     const body = JSON.parse(init.body);
-    expect(body).toMatchObject({ model: 'm', stream: false, options: { num_predict: 100 } });
+    expect(body).toMatchObject({
+      model: 'm',
+      stream: false,
+      options: { num_predict: 100 },
+    });
     expect(typeof body.prompt).toBe('string');
     expect(body.prompt).toContain('91/100');
     expect(body.prompt).not.toContain('/Users/');
   });
 
   it('returns {ok:false,error} when the generate fetch fails', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
-    const result = await explainAudit(minimalBattery, { baseUrl: 'http://ollama.test', timeoutMs: 1000 });
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+    );
+    const result = await explainAudit(minimalBattery, {
+      baseUrl: 'http://ollama.test',
+      timeoutMs: 1000,
+    });
     expect(result.ok).toBe(false);
     expect(typeof result.error).toBe('string');
     expect(result.error).toContain('ECONNREFUSED');
   });
 
   it('returns {ok:false,error} on HTTP error responses', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 404 }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({ ok: false, status: 404 }),
+    );
     const result = await explainAudit(minimalBattery);
     expect(result.ok).toBe(false);
     expect(result.error).toContain('404');
   });
 
   it('returns {ok:false,error} for an invalid battery without throwing', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ response: 'x' }) }));
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue({ ok: true, json: async () => ({ response: 'x' }) }),
+    );
     const result = await explainAudit(null);
     expect(result).toEqual({ ok: false, error: 'invalid battery' });
   });

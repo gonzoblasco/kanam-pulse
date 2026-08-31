@@ -2,7 +2,7 @@
 // Basic security health check: system updates pending, launch agents,
 // and whether firewall is enabled.
 
-import os from 'os';
+import os from 'node:os';
 import { runSafe } from '../core/exec.js';
 
 /**
@@ -10,7 +10,9 @@ import { runSafe } from '../core/exec.js';
  * @returns {Promise<{enabled:boolean, error?:string}|null>}
  */
 async function getFirewallStatus() {
-  const res = await runSafe('/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate');
+  const res = await runSafe(
+    '/usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate',
+  );
   if (!res) return null;
   // Output: "Firewall is enabled. (State = 1)" or "(State = 0)"
   const stateMatch = res.stdout.match(/State = (\d)/);
@@ -23,10 +25,7 @@ async function getFirewallStatus() {
  */
 async function countLaunchAgents() {
   const home = os.homedir();
-  const dirs = [
-    `${home}/Library/LaunchAgents`,
-    '/Library/LaunchAgents',
-  ];
+  const dirs = [`${home}/Library/LaunchAgents`, '/Library/LaunchAgents'];
   let count = 0;
   for (const dir of dirs) {
     const res = await runSafe(`ls "${dir}" 2>/dev/null | wc -l`);
@@ -53,7 +52,8 @@ export async function checkSecurity() {
     suggestions.push({
       priority: 'high',
       component: 'security',
-      action: 'macOS firewall is disabled. Enable it in System Settings > Network > Firewall.',
+      action:
+        'macOS firewall is disabled. Enable it in System Settings > Network > Firewall.',
       impact: 'Blocks unwanted incoming network connections.',
     });
   }
@@ -64,7 +64,8 @@ export async function checkSecurity() {
       priority: 'low',
       component: 'security',
       action: `${launchAgents} launch agents found. Review auto-start apps to reduce attack surface and boot time.`,
-      impact: 'Fewer auto-start items means faster boot and less background activity.',
+      impact:
+        'Fewer auto-start items means faster boot and less background activity.',
     });
   }
 
@@ -73,7 +74,10 @@ export async function checkSecurity() {
   return {
     score,
     status: score >= 70 ? 'healthy' : 'warning',
-    details: { firewall: firewall ? firewall.enabled : 'unknown', launchAgents: launchAgents ?? 'unknown' },
+    details: {
+      firewall: firewall ? firewall.enabled : 'unknown',
+      launchAgents: launchAgents ?? 'unknown',
+    },
     suggestions,
   };
 }

@@ -1,5 +1,5 @@
 // useMemoryStream.ts
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 interface MetricPayload {
   memory: number | null;
@@ -20,7 +20,7 @@ export function useMemoryStream() {
         const payload: MetricPayload = JSON.parse(event.data);
         // Update state with lightweight metrics
         setData(payload);
-      } catch (e) {
+      } catch (_e) {
         setError('Failed to parse metric payload');
       }
     };

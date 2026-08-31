@@ -4,12 +4,11 @@
 //   scan -> select targets -> dry-run -> Apply button enables -> click Apply
 //   opens the confirm dialog.
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import FixesPanel from './FixesPanel';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { FixScanResult } from '../types/api';
+import FixesPanel from './FixesPanel';
 
 const scanResult: FixScanResult = {
   caches: [
@@ -45,21 +44,23 @@ const applyResult = {
 
 /** Scan + dry-run succeed; apply is recorded. No real network access. */
 function stubHappyFetch() {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    let body: unknown;
-    if (method === 'GET' && url === '/api/fixes/scan') {
-      body = scanResult;
-    } else if (method === 'POST' && url === '/api/fixes/dry-run') {
-      body = dryRunResult;
-    } else if (method === 'POST' && url === '/api/fixes/apply') {
-      body = applyResult;
-    } else {
-      throw new Error(`unexpected fetch: ${method} ${url}`);
-    }
-    return { ok: true, status: 200, json: async () => body } as Response;
-  });
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      let body: unknown;
+      if (method === 'GET' && url === '/api/fixes/scan') {
+        body = scanResult;
+      } else if (method === 'POST' && url === '/api/fixes/dry-run') {
+        body = dryRunResult;
+      } else if (method === 'POST' && url === '/api/fixes/apply') {
+        body = applyResult;
+      } else {
+        throw new Error(`unexpected fetch: ${method} ${url}`);
+      }
+      return { ok: true, status: 200, json: async () => body } as Response;
+    },
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -139,7 +140,9 @@ describe('FixesPanel', () => {
     await user.click(await screen.findByRole('button', { name: 'Escanear' }));
 
     await waitFor(() =>
-      expect(screen.getByRole('group', { name: /cachés/i })).toBeInTheDocument(),
+      expect(
+        screen.getByRole('group', { name: /cachés/i }),
+      ).toBeInTheDocument(),
     );
     // Both cached targets render after the second scan.
     expect(

@@ -1,7 +1,7 @@
 // src/checks/cpu.js
 // CPU load health check: load average, core count, heavy processes.
 
-import os from 'os';
+import os from 'node:os';
 import { runSafe } from '../core/exec.js';
 
 /**
@@ -81,7 +81,14 @@ export async function checkCpu() {
   return {
     score,
     status: score >= 70 ? 'healthy' : 'warning',
-    details: { normalized1, cores, loadAverage1: load.load1, loadAverage5: load.load5, loadAverage15: load.load15, topProcesses: top },
+    details: {
+      normalized1,
+      cores,
+      loadAverage1: load.load1,
+      loadAverage5: load.load5,
+      loadAverage15: load.load15,
+      topProcesses: top,
+    },
     suggestions,
   };
 }

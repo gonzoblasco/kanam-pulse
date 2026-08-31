@@ -1,6 +1,5 @@
-import React from 'react';
-import HealthScoreCard from './components/HealthScoreCard';
 import FixesPanel from './components/FixesPanel';
+import HealthScoreCard from './components/HealthScoreCard';
 import { useI18n } from './i18n/useI18n';
 
 function App() {

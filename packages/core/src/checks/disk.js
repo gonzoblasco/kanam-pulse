@@ -2,7 +2,7 @@
 // Storage health check: disk usage %, biggest consumers, reclaimable caches.
 // Returns 0-100 score and actionable suggestions.
 
-import os from 'os';
+import os from 'node:os';
 import { runSafe } from '../core/exec.js';
 
 /**
@@ -26,7 +26,8 @@ async function getDiskStats() {
   const freeKb = Number(parts[3]);
   const usedPct = Number(parts[4]?.replace('%', '')) || 0;
 
-  if (Number.isNaN(totalKb) || Number.isNaN(usedKb) || Number.isNaN(freeKb)) return null;
+  if (Number.isNaN(totalKb) || Number.isNaN(usedKb) || Number.isNaN(freeKb))
+    return null;
 
   return {
     totalBytes: totalKb * 1024,
@@ -44,7 +45,9 @@ async function getDiskStats() {
  */
 async function getLargestFiles(dir = os.homedir(), limit = 5) {
   // Find top-level dirs/files up to a depth to avoid a 10-minute scan.
-  const res = await runSafe(`du -sm "${dir}"/* 2>/dev/null | sort -rn | head -${limit}`);
+  const res = await runSafe(
+    `du -sm "${dir}"/* 2>/dev/null | sort -rn | head -${limit}`,
+  );
   if (!res) return null;
 
   return res.stdout
@@ -76,7 +79,9 @@ async function getCacheUsage() {
     const res = await runSafe(`du -sh "${dir}" 2>/dev/null | awk '{print $1}'`);
     if (!res) continue;
     // du -sh gives human format; recompute numerically via -sk for bytes.
-    const numRes = await runSafe(`du -sk "${dir}" 2>/dev/null | grep -oE '^[0-9]+'`);
+    const numRes = await runSafe(
+      `du -sk "${dir}" 2>/dev/null | grep -oE '^[0-9]+'`,
+    );
     if (!numRes) continue;
     const kb = Number(numRes.stdout.trim());
     if (Number.isNaN(kb) || kb <= 0) continue;
@@ -136,5 +141,10 @@ export async function checkDisk() {
   if (largest?.length) details.largestFiles = largest.slice(0, 3);
   if (caches) details.cacheTotalBytes = caches.totalBytes;
 
-  return { score, status: score >= 70 ? 'healthy' : 'warning', details, suggestions };
+  return {
+    score,
+    status: score >= 70 ? 'healthy' : 'warning',
+    details,
+    suggestions,
+  };
 }

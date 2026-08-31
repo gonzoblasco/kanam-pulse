@@ -3,10 +3,9 @@
 // fetch stubbed. The initial /api/run fetch is mocked too, so the card
 // renders its happy path (a fixed score) without any server.
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import HealthScoreCard from './HealthScoreCard';
 
 const healthRun = {
@@ -28,21 +27,25 @@ const healthRun = {
 type FetchHandler = (url: string, init?: RequestInit) => unknown;
 
 function stubFetch(handlers: Record<string, FetchHandler>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    const route = `${method} ${url}`;
-    const handler = handlers[route];
-    if (!handler) throw new Error(`unexpected fetch: ${route}`);
-    const body = await handler(url, init);
-    return { ok: true, status: 200, json: async () => body } as Response;
-  });
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      const route = `${method} ${url}`;
+      const handler = handlers[route];
+      if (!handler) throw new Error(`unexpected fetch: ${route}`);
+      const body = await handler(url, init);
+      return { ok: true, status: 200, json: async () => body } as Response;
+    },
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
 
 beforeEach(() => {
-  stubFetch({ 'GET /api/run?checks=disk,memory,cpu,security,network': () => healthRun });
+  stubFetch({
+    'GET /api/run?checks=disk,memory,cpu,security,network': () => healthRun,
+  });
 });
 
 afterEach(() => {
@@ -66,14 +69,19 @@ describe('HealthScoreCard - Explain this audit', () => {
       'GET /api/run?checks=disk,memory,cpu,security,network': () => healthRun,
       'POST /api/audit/explain': (_url, init) => {
         explainBody = JSON.parse(String(init?.body));
-        return { available: true, explanation: 'Your system looks good. Everything is healthy.' };
+        return {
+          available: true,
+          explanation: 'Your system looks good. Everything is healthy.',
+        };
       },
     });
 
     const user = userEvent.setup();
     render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    );
 
     // The explanation arrives and is announced in the polite status region.
     const text = await screen.findByText(/Your system looks good/);
@@ -83,26 +91,35 @@ describe('HealthScoreCard - Explain this audit', () => {
     // The battery from the health run is sent to the endpoint.
     expect(explainBody).toEqual({ battery: healthRun });
     // The button is interactive again.
-    expect(screen.getByRole('button', { name: 'Explicar auditoría' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    ).toBeEnabled();
   });
 
   it('shows a subtle notice when Ollama is unavailable', async () => {
     stubFetch({
       'GET /api/run?checks=disk,memory,cpu,security,network': () => healthRun,
-      'POST /api/audit/explain': () => ({ available: false, error: 'ollama not available' }),
+      'POST /api/audit/explain': () => ({
+        available: false,
+        error: 'ollama not available',
+      }),
     });
 
     const user = userEvent.setup();
     render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    );
 
     const notice = await screen.findByText(/Ollama no está disponible/);
     expect(notice).toBeInTheDocument();
     // The notice lives inside the polite live region.
     expect(notice.closest('[aria-live="polite"]')).not.toBeNull();
     // Button stays available for retry.
-    expect(screen.getByRole('button', { name: 'Explicar auditoría' })).toBeEnabled();
+    expect(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    ).toBeEnabled();
   });
 
   it('surfaces hard failures in a polite region and keeps the button for retry', async () => {
@@ -116,9 +133,15 @@ describe('HealthScoreCard - Explain this audit', () => {
     const user = userEvent.setup();
     render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    );
 
-    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('server offline'));
-    expect(screen.getByRole('button', { name: 'Explicar auditoría' })).toBeEnabled();
+    await waitFor(() =>
+      expect(screen.getByRole('alert')).toHaveTextContent('server offline'),
+    );
+    expect(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    ).toBeEnabled();
   });
 });

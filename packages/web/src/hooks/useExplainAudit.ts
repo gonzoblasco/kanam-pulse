@@ -11,8 +11,8 @@
 // it surfaces a subtle one-liner and offers a retry. Everything degrades
 // gracefully - the audit flow itself never depends on this feature.
 
-import { useState, useCallback } from 'react';
-import type { HealthRunData, ExplainAuditResponse } from '../types/api';
+import { useCallback, useState } from 'react';
+import type { ExplainAuditResponse, HealthRunData } from '../types/api';
 
 export interface UseExplainAudit {
   /** Human-language summary from Ollama (when available). */

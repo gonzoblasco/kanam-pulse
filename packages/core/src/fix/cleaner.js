@@ -4,10 +4,21 @@
 // Never touches user data, documents, or anything ambiguous.
 // Every action requires explicit confirmation before running.
 
-import os from 'os';
-import fs from 'fs';
-import path from 'path';
+import { execFile } from 'node:child_process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { promisify } from 'node:util';
 import { runSafe } from '../core/exec.js';
+
+const execFileAsync = promisify(execFile);
+
+// Trash-style removal (SPEC: destructive operations go to the Trash, never
+// immediate permanent delete). macOS ships /usr/bin/trash; if it is not
+// available the engine refuses to clean rather than falling back to a
+// permanent delete.
+const TRASH_BIN = '/usr/bin/trash';
+const TRASH_TIMEOUT = 10000;
 
 /**
  * Well-known safe-to-clean cache locations.
@@ -69,12 +80,19 @@ export async function clearDirContents(dir) {
   }
 
   const before = await getDirSizeBytes(dir);
+  if (!fs.existsSync(TRASH_BIN)) {
+    return {
+      ok: false,
+      freedBytes: 0,
+      error: 'trash-style removal unavailable; refusing permanent delete',
+    };
+  }
   try {
-    // Remove contents, keep the top-level dir.
+    // Move each entry to the Trash, keep the top-level dir.
     const entries = fs.readdirSync(dir);
     for (const entry of entries) {
       const full = path.join(dir, entry);
-      fs.rmSync(full, { recursive: true, force: true });
+      await execFileAsync(TRASH_BIN, [full], { timeout: TRASH_TIMEOUT });
     }
     return { ok: true, freedBytes: before };
   } catch (err) {

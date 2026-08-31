@@ -16,22 +16,24 @@
 //   - `axe.run` needs the container attached to document.body; RTL does that
 //     by default, and `configureAxe`/`axe` restore body content afterwards.
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axe } from 'vitest-axe';
+import type { FixScanResult } from '../types/api';
 import ConfirmDialog from './ConfirmDialog';
 import FixesPanel from './FixesPanel';
 import HealthScoreCard from './HealthScoreCard';
-import type { FixScanResult } from '../types/api';
 
 // WCAG: axe "impact" levels - critical, serious, moderate, minor.
 // We fail the build on anything serious or worse; lower-impact findings are
 // reported but do not gate the pipeline (they are triaged in the M4 audit).
-const MAX_ALLOWED_IMPACT = 'serious';
+const _MAX_ALLOWED_IMPACT = 'serious';
 
-async function expectNoSeriousViolations(container: HTMLElement, label: string) {
+async function expectNoSeriousViolations(
+  container: HTMLElement,
+  label: string,
+) {
   const results = await axe(container);
   const serious = results.violations.filter(
     (v) => v.impact === 'critical' || v.impact === 'serious',
@@ -98,16 +100,20 @@ const healthRun = {
   runInfo: { elapsedMs: 12, total: 1, passed: 1, warnings: 0, errors: 0 },
 };
 
-function stubFetch(handlers: Record<string, (url: string, init?: RequestInit) => unknown>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    const route = `${method} ${url}`;
-    const handler = handlers[route];
-    if (!handler) throw new Error(`unexpected fetch: ${route}`);
-    const body = await handler(url, init);
-    return { ok: true, status: 200, json: async () => body } as Response;
-  });
+function stubFetch(
+  handlers: Record<string, (url: string, init?: RequestInit) => unknown>,
+) {
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      const route = `${method} ${url}`;
+      const handler = handlers[route];
+      if (!handler) throw new Error(`unexpected fetch: ${route}`);
+      const body = await handler(url, init);
+      return { ok: true, status: 200, json: async () => body } as Response;
+    },
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -170,7 +176,9 @@ describe('a11y: FixesPanel', () => {
   it('has no serious axe violations in the initial (scan prompt) state', async () => {
     const { container } = render(<FixesPanel />);
     // Initial state: hint text, enabled Scan, disabled Dry-run/Apply.
-    expect(screen.getByRole('button', { name: 'Escanear' })).toBeInTheDocument();
+    expect(
+      screen.getByRole('button', { name: 'Escanear' }),
+    ).toBeInTheDocument();
     await expectNoSeriousViolations(container, 'FixesPanel initial');
   });
 
@@ -180,7 +188,9 @@ describe('a11y: FixesPanel', () => {
 
     await user.click(screen.getByRole('button', { name: 'Escanear' }));
     const caches = await screen.findByRole('group', { name: /cachés/i });
-    const processes = await screen.findByRole('group', { name: /procesos pesados/i });
+    const processes = await screen.findByRole('group', {
+      name: /procesos pesados/i,
+    });
 
     // Labels are properly associated with their checkboxes.
     expect(
@@ -224,7 +234,10 @@ describe('a11y: FixesPanel', () => {
     await user.click(apply);
     await screen.findByRole('dialog');
 
-    await expectNoSeriousViolations(container, 'FixesPanel + ConfirmDialog open');
+    await expectNoSeriousViolations(
+      container,
+      'FixesPanel + ConfirmDialog open',
+    );
   });
 
   it('has no serious axe violations when an error alert is shown', async () => {
@@ -270,24 +283,34 @@ describe('a11y: HealthScoreCard', () => {
     const user = userEvent.setup();
     const { container } = render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    );
 
     const text = await screen.findByText(/Your system looks good/);
     expect(text.closest('[aria-live="polite"]')).not.toBeNull();
 
-    await expectNoSeriousViolations(container, 'HealthScoreCard with explanation');
+    await expectNoSeriousViolations(
+      container,
+      'HealthScoreCard with explanation',
+    );
   });
 
   it('has no serious axe violations when the explanation is unavailable', async () => {
     stubFetch({
       'GET /api/run?checks=disk,memory,cpu,security,network': () => healthRun,
-      'POST /api/audit/explain': () => ({ available: false, error: 'ollama not available' }),
+      'POST /api/audit/explain': () => ({
+        available: false,
+        error: 'ollama not available',
+      }),
     });
 
     const user = userEvent.setup();
     const { container } = render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
+    await user.click(
+      screen.getByRole('button', { name: 'Explicar auditoría' }),
+    );
     await screen.findByText(/Ollama no está disponible/i);
 
     await expectNoSeriousViolations(container, 'HealthScoreCard unavailable');

@@ -2,23 +2,23 @@
 // Local read-only HTTP API wrapping @kanam-pulse/core.
 // GET-only surface; the core engine is the single source of truth.
 
-import { createRequire } from 'node:module';
 import { execFile } from 'node:child_process';
+import { createRequire } from 'node:module';
 import os from 'node:os';
-import Fastify from 'fastify';
 import {
   CHECKS,
-  runBattery,
-  readHistory,
-  getSafeCacheTargets,
-  scanSafeCaches,
-  getDirSizeBytes,
   clearDirContents,
-  scanHeavyProcesses,
-  killProcess,
-  isOllamaAvailable,
   explainAudit,
+  getDirSizeBytes,
+  getSafeCacheTargets,
+  isOllamaAvailable,
+  killProcess,
+  readHistory,
+  runBattery,
+  scanHeavyProcesses,
+  scanSafeCaches,
 } from '@kanam-pulse/core';
+import Fastify from 'fastify';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -66,7 +66,12 @@ export async function buildApp() {
 
   app.get('/api/run', async (request, reply) => {
     const raw = request.query?.checks;
-    const checkIds = raw ? String(raw).split(',').map((s) => s.trim()).filter(Boolean) : [];
+    const checkIds = raw
+      ? String(raw)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [];
     const unknown = checkIds.filter((id) => !CHECKS.some((c) => c.id === id));
     if (unknown.length > 0) {
       reply.code(400);
@@ -88,7 +93,10 @@ export async function buildApp() {
   // so the UI can hide it - this endpoint never breaks the audit flow.
   app.post('/api/audit/explain', async (request) => {
     const body = request.body ?? {};
-    const battery = body && typeof body.battery === 'object' && body.battery ? body.battery : null;
+    const battery =
+      body && typeof body.battery === 'object' && body.battery
+        ? body.battery
+        : null;
 
     if (!(await isOllamaAvailable())) {
       return { available: false, error: 'ollama not available' };
@@ -116,7 +124,9 @@ export async function buildApp() {
   // Dry-run: estimates what a given set of targets would free/kill.
   // Never executes a cleanup or kill; purely reports.
   app.post('/api/fixes/dry-run', async (request) => {
-    const rawTargets = Array.isArray(request.body?.targets) ? request.body.targets : [];
+    const rawTargets = Array.isArray(request.body?.targets)
+      ? request.body.targets
+      : [];
     const cacheTargets = await getSafeCacheTargets();
     const byId = new Map(cacheTargets.map((t) => [t.id, t]));
 
@@ -177,7 +187,7 @@ export async function buildApp() {
       }
       try {
         const res = await clearDirContents(target.path);
-        if (res && res.ok) {
+        if (res?.ok) {
           freedBytes += res.freedBytes ?? 0;
         } else {
           errors.push(res?.error || `failed to clear cache: ${id}`);
@@ -190,7 +200,7 @@ export async function buildApp() {
     for (const pid of pids) {
       try {
         const res = await killProcess(pid);
-        if (res && res.ok) {
+        if (res?.ok) {
           killedPids.push(pid);
         } else {
           errors.push(res?.error || `failed to kill process: ${pid}`);
@@ -222,7 +232,9 @@ export async function buildApp() {
       } catch {
         // If metrics collection fails, send a safe default so the stream keeps alive
         if (raw.destroyed || raw.writableEnded) return stop();
-        raw.write(`event: metrics\ndata: {"memory":0,"load":0,"unit":"bytes"}\n\n`);
+        raw.write(
+          `event: metrics\ndata: {"memory":0,"load":0,"unit":"bytes"}\n\n`,
+        );
       }
     };
 

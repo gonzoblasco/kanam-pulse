@@ -1,5 +1,5 @@
 // tests/format.test.js
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { formatBytes, scoreStatus, statusLabel } from '../src/utils/format.js';
 
 describe('formatBytes', () => {

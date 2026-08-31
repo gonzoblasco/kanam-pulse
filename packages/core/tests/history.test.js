@@ -1,9 +1,15 @@
 // tests/history.test.js
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import { readHistory, appendHistory, summarizeTrend, getHistoryPath } from '../src/core/history.js';
+
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  appendHistory,
+  getHistoryPath,
+  readHistory,
+  summarizeTrend,
+} from '../src/core/history.js';
 
 // Redirect history to a temp dir so we never touch the real home.
 const TMP = fs.mkdtempSync(path.join(os.tmpdir(), 'shc-test-'));

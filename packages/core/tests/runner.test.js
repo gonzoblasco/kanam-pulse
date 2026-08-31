@@ -1,6 +1,6 @@
 // tests/runner.test.js
-import { describe, it, expect, vi } from 'vitest';
-import { runBattery, collectSuggestions } from '../src/core/runner.js';
+import { describe, expect, it, vi } from 'vitest';
+import { collectSuggestions, runBattery } from '../src/core/runner.js';
 
 // Mock the checks registry so tests don't touch the real system.
 vi.mock('../src/checks/index.js', () => {
@@ -10,7 +10,12 @@ vi.mock('../src/checks/index.js', () => {
         {
           id: 'disk',
           name: 'Disk',
-          run: async () => ({ score: 90, status: 'healthy', details: {}, suggestions: [] }),
+          run: async () => ({
+            score: 90,
+            status: 'healthy',
+            details: {},
+            suggestions: [],
+          }),
         },
         {
           id: 'memory',
@@ -19,7 +24,9 @@ vi.mock('../src/checks/index.js', () => {
             score: 40,
             status: 'warning',
             details: {},
-            suggestions: [{ priority: 'high', action: 'Free up RAM', impact: 'x' }],
+            suggestions: [
+              { priority: 'high', action: 'Free up RAM', impact: 'x' },
+            ],
           }),
         },
       ];

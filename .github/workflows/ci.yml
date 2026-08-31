@@ -1,15 +1,9 @@
-# CI pipeline for kanam-pulse (M4 U1).
+# CI pipeline for kanam-pulse (M4 U1; lint gated in M5 U1).
 # Runs on every push to main and on pull requests targeting main:
 #   - install (npm ci)
-#   - tests across all workspaces (vitest, jsdom env for the web)
+#   - lint across the monorepo (Biome, root `lint` script)
 #   - build across all workspaces (tsc for server, vite for web)
-#
-# Lint (packages/web has a `lint` script) is intentionally NOT gated here:
-# eslint is not installed in the repo yet (no eslint deps nor a config
-# exist - the script currently fails with "eslint: command not found").
-# Installing the full eslint + react-hooks setup is tracked separately for
-# M4; test+build are the CI gates for now. Remove this note once lint is
-# wired into CI.
+#   - tests across all workspaces (vitest, jsdom env for the web)
 #
 # Node 20 is the workspace engine floor (root package.json: node >=20).
 
@@ -26,7 +20,7 @@ permissions:
 
 jobs:
   quality:
-    name: Test + Build (Node 20)
+    name: Lint + Test + Build (Node 20)
     runs-on: ubuntu-22.04
     timeout-minutes: 15
 
@@ -42,6 +36,9 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Lint workspaces
+        run: npm run lint
 
       - name: Build workspaces
         run: npm run build --workspaces --if-present

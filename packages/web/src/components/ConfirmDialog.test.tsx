@@ -3,10 +3,9 @@
 // role/aria contract, focus trap (initial focus on Cancel, Tab cycling),
 // Escape/confirm handlers, and focus restore to the opener on close.
 
-import React from 'react';
-import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import ConfirmDialog from './ConfirmDialog';
 
 afterEach(() => {
@@ -55,8 +54,12 @@ describe('ConfirmDialog', () => {
     expect(messageId).toBeTruthy();
     // React's useId() emits colons (e.g. ":r0:") which are invalid in CSS
     // selectors, so resolve the references with getElementById, not querySelector.
-    expect(document.getElementById(titleId!)).toHaveTextContent('Confirm fixes');
-    expect(document.getElementById(messageId!)).toHaveTextContent('This cannot be undone.');
+    expect(document.getElementById(titleId!)).toHaveTextContent(
+      'Confirm fixes',
+    );
+    expect(document.getElementById(messageId!)).toHaveTextContent(
+      'This cannot be undone.',
+    );
   });
 
   it('moves initial focus to the Cancel button (focus trap entry point)', () => {
@@ -117,7 +120,9 @@ describe('ConfirmDialog', () => {
     renderDialog({ busy: true });
     expect(screen.getByRole('button', { name: 'Aplicando...' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
-    expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Apply' }),
+    ).not.toBeInTheDocument();
   });
 
   it('does not cancel when clicking inside the dialog surface', () => {

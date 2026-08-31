@@ -35,7 +35,9 @@ async function pingLatency(host) {
  * @returns {Promise<{ok:boolean, ip?:string}|null>}
  */
 async function resolveDns(host) {
-  const res = await runSafe(`dscacheutil -q host -a name "${host}" 2>/dev/null`);
+  const res = await runSafe(
+    `dscacheutil -q host -a name "${host}" 2>/dev/null`,
+  );
   if (!res) return null;
   const ipMatch = res.stdout.match(/ip_address:\s*([\d.]+)/);
   return { ok: Boolean(ipMatch), ip: ipMatch?.[1] };
@@ -46,7 +48,9 @@ async function resolveDns(host) {
  * @returns {Promise<boolean|null>}
  */
 async function hasConnectivity() {
-  const res = await runSafe('curl -s -o /dev/null -w "%{http_code}" --max-time 5 https://www.google.com 2>/dev/null');
+  const res = await runSafe(
+    'curl -s -o /dev/null -w "%{http_code}" --max-time 5 https://www.google.com 2>/dev/null',
+  );
   if (!res) return null;
   const code = Number(res.stdout.trim());
   return code >= 200 && code < 500;
@@ -71,7 +75,8 @@ export async function checkNetwork() {
 
   const reachablePings = latencies.filter((l) => l.latencyMs !== null);
   const avgLatency = reachablePings.length
-    ? reachablePings.reduce((s, l) => s + l.latencyMs, 0) / reachablePings.length
+    ? reachablePings.reduce((s, l) => s + l.latencyMs, 0) /
+      reachablePings.length
     : null;
 
   const dnsOk = dnsResults.filter((d) => d.ok).length;
@@ -84,7 +89,8 @@ export async function checkNetwork() {
     suggestions.push({
       priority: 'high',
       component: 'network',
-      action: 'No internet connectivity detected. Check Wi-Fi/ethernet and router.',
+      action:
+        'No internet connectivity detected. Check Wi-Fi/ethernet and router.',
       impact: 'Restores all network-dependent functionality.',
     });
   } else if (connectivity === null) {
@@ -112,7 +118,8 @@ export async function checkNetwork() {
     suggestions.push({
       priority: 'high',
       component: 'network',
-      action: 'DNS resolution failing for some hosts. Check DNS settings or try 1.1.1.1 / 8.8.8.8.',
+      action:
+        'DNS resolution failing for some hosts. Check DNS settings or try 1.1.1.1 / 8.8.8.8.',
       impact: 'Fixes "can\'t resolve host" errors.',
     });
   }

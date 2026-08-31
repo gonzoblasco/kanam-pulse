@@ -5,11 +5,10 @@
 //   - setLocale() switches translations for all mounted consumers and
 //     persists the choice to localStorage
 
-import React from 'react';
-import { describe, it, expect, afterEach, vi } from 'vitest';
-import { render, screen, act } from '@testing-library/react';
-import { useI18n, setLocale, getLocale } from './useI18n';
+import { act, render, screen } from '@testing-library/react';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { strings } from './strings';
+import { getLocale, setLocale, useI18n } from './useI18n';
 
 function Probe({ prefix }: { prefix?: string }) {
   const { locale, t } = useI18n();
@@ -18,7 +17,11 @@ function Probe({ prefix }: { prefix?: string }) {
       <span data-testid="locale">{locale}</span>
       <span data-testid="scan">{t('fixes.scan')}</span>
       <span data-testid="tpl">
-        {t('fixes.confirmMessage', { cacheCount: 2, processCount: 1, targets: 'X' })}
+        {t('fixes.confirmMessage', {
+          cacheCount: 2,
+          processCount: 1,
+          targets: 'X',
+        })}
       </span>
       {prefix ? <span data-testid="prefix">{t('fixes.freed')}</span> : null}
     </div>

@@ -3,7 +3,7 @@
 // Technique: parse page counts and compute Activity Monitor-accurate
 // memory usage (anonymous - purgeable = app memory).
 
-import os from 'os';
+import os from 'node:os';
 import { runSafe } from '../core/exec.js';
 
 /**
@@ -15,24 +15,30 @@ async function getMemoryStats() {
   const res = await runSafe('vm_stat');
   if (!res) return null;
 
-  const pageSize = parseInt(res.stdout.match(/page size of (\d+) bytes/)?.[1] || 16384, 10);
+  const pageSize = parseInt(
+    res.stdout.match(/page size of (\d+) bytes/)?.[1] || 16384,
+    10,
+  );
   const getPages = (key) => {
-    const m = res.stdout.match(new RegExp(key + ":\\s+(\\d+)\\."));
+    const m = res.stdout.match(new RegExp(`${key}:\\s+(\\d+)\\.`));
     return m ? parseInt(m[1], 10) * pageSize : 0;
   };
 
-  const free = getPages("Pages free") + getPages("Pages speculative");
-  const active = getPages("Pages active");
-  const wired = getPages("Pages wired down");
-  const compressed = getPages("Pages occupied by compressor");
-  const purgeable = getPages("Pages purgeable");
-  const fileBacked = getPages("File-backed pages");
-  const anonymous = getPages("Anonymous pages");
+  const _free = getPages('Pages free') + getPages('Pages speculative');
+  const _active = getPages('Pages active');
+  const wired = getPages('Pages wired down');
+  const compressed = getPages('Pages occupied by compressor');
+  const purgeable = getPages('Pages purgeable');
+  const _fileBacked = getPages('File-backed pages');
+  const anonymous = getPages('Anonymous pages');
 
   const appMemory = Math.max(anonymous - purgeable, 0);
   const memoryUsed = appMemory + wired + compressed;
   const availableMem = Math.max(total - memoryUsed, 0);
-  const percentage = Math.min(Math.max(Math.round((memoryUsed / total) * 100), 1), 100);
+  const percentage = Math.min(
+    Math.max(Math.round((memoryUsed / total) * 100), 1),
+    100,
+  );
 
   return {
     total,
@@ -86,14 +92,19 @@ export async function checkMemory() {
     suggestions.push({
       priority: pct >= 90 ? 'high' : 'medium',
       component: 'memory',
-      action: `RAM usage is ${pct}% (${(stats.used / (1024 ** 3)).toFixed(1)} GB / ${(stats.total / (1024 ** 3)).toFixed(1)} GB). Close heavy apps or consider more RAM.`,
+      action: `RAM usage is ${pct}% (${(stats.used / 1024 ** 3).toFixed(1)} GB / ${(stats.total / 1024 ** 3).toFixed(1)} GB). Close heavy apps or consider more RAM.`,
       impact: 'Reducing memory pressure improves overall responsiveness.',
     });
   }
 
   return {
     score,
-    status: score >= 70 ? 'healthy' : pressure === 'critical' ? 'critical' : 'warning',
+    status:
+      score >= 70
+        ? 'healthy'
+        : pressure === 'critical'
+          ? 'critical'
+          : 'warning',
     details: { percentage: pct, pressure, ...stats },
     suggestions,
   };

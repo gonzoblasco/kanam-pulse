@@ -3,8 +3,8 @@
 // Reuses the react plugin from the vite config so TSX transforms match
 // the dev/build pipeline. Tests live next to their sources under src/**.
 
-import { defineConfig } from 'vitest/config';
 import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   plugins: [react()],

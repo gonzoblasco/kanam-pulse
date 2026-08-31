@@ -1,11 +1,11 @@
 // src/checks/index.js
 // Registry of all health checks.
 
+import { checkCpu } from './cpu.js';
 import { checkDisk } from './disk.js';
 import { checkMemory } from './memory.js';
-import { checkCpu } from './cpu.js';
-import { checkSecurity } from './security.js';
 import { checkNetwork } from './network.js';
+import { checkSecurity } from './security.js';
 
 export const CHECKS = [
   { id: 'disk', name: 'Disk / Storage', run: checkDisk },

@@ -2,8 +2,7 @@
 // Server API tests. The core runner is mocked for /api/run so tests never
 // shell out to system commands; everything else uses the real core facade.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import fastify from 'fastify';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@kanam-pulse/core', async (importOriginal) => {
   const actual = await importOriginal();
@@ -13,8 +12,8 @@ vi.mock('@kanam-pulse/core', async (importOriginal) => {
   };
 });
 
+import { CHECKS, runBattery } from '@kanam-pulse/core';
 import { buildApp } from '../src/app.js';
-import { runBattery, CHECKS } from '@kanam-pulse/core';
 
 describe('buildApp', () => {
   it('is exported as an async factory that returns a fastify instance', async () => {
@@ -27,15 +26,20 @@ describe('buildApp', () => {
 
   it('registers GET routes on the /api prefix', async () => {
     const app = await buildApp();
-    const routes = app.printRoutes({ commonPrefix: false })
-      .split('\n').map((line) => line.trim()).filter(Boolean);
-    expect(routes).toEqual(expect.arrayContaining([
-      expect.stringContaining('/api/health'),
-      expect.stringContaining('/api/checks'),
-      expect.stringContaining('/api/run'),
-      expect.stringContaining('/api/history'),
-      expect.stringContaining('/api/metrics/stream'),
-    ]));
+    const routes = app
+      .printRoutes({ commonPrefix: false })
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    expect(routes).toEqual(
+      expect.arrayContaining([
+        expect.stringContaining('/api/health'),
+        expect.stringContaining('/api/checks'),
+        expect.stringContaining('/api/run'),
+        expect.stringContaining('/api/history'),
+        expect.stringContaining('/api/metrics/stream'),
+      ]),
+    );
     await app.close();
   });
 
@@ -45,7 +49,7 @@ describe('buildApp', () => {
     );
     expect(indexSource).toMatch(/HOST\s*=\s*['"]127\.0\.0\.1['"]/);
     expect(indexSource).not.toMatch(/0\.0\.0\.0/);
- expect(indexSource).toMatch(/process\.env\.PORT/);
+    expect(indexSource).toMatch(/process\.env\.PORT/);
   });
 });
 
@@ -112,7 +116,10 @@ describe('GET /api/run', () => {
       runInfo: { elapsedMs: 3, total: 2, passed: 2, warnings: 0, errors: 0 },
     });
     const app = await buildApp();
-    const res = await app.inject({ method: 'GET', url: '/api/run?checks=disk,memory' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/run?checks=disk,memory',
+    });
     expect(res.statusCode).toBe(200);
     expect(runBattery).toHaveBeenCalledWith(['disk', 'memory']);
     await app.close();
@@ -120,7 +127,10 @@ describe('GET /api/run', () => {
 
   it('rejects unknown check ids with 400', async () => {
     const app = await buildApp();
-    const res = await app.inject({ method: 'GET', url: '/api/run?checks=disk,nope' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/run?checks=disk,nope',
+    });
     expect(res.statusCode).toBe(400);
     expect(runBattery).not.toHaveBeenCalled();
     await app.close();

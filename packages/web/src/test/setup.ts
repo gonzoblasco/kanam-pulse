@@ -26,7 +26,12 @@ function installLocalStorageShim(): void {
   try {
     const win = window as Window & { localStorage?: Storage };
     const desc = Object.getOwnPropertyDescriptor(win, 'localStorage');
-    if (desc && 'value' in desc && desc.value && typeof desc.value.getItem === 'function') {
+    if (
+      desc &&
+      'value' in desc &&
+      desc.value &&
+      typeof desc.value.getItem === 'function'
+    ) {
       return; // A working Storage is already installed.
     }
 
@@ -39,7 +44,8 @@ function installLocalStorageShim(): void {
       getItem: (key: string) => (store.has(key) ? store.get(key)! : null),
       key: (index: number) => Array.from(store.keys())[index] ?? null,
       removeItem: (key: string) => void store.delete(key),
-      setItem: (key: string, value: string) => void store.set(key, String(value)),
+      setItem: (key: string, value: string) =>
+        void store.set(key, String(value)),
     };
     Object.setPrototypeOf(shim, Storage.prototype);
 

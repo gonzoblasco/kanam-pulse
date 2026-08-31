@@ -15,7 +15,7 @@ The engine (`@kanam-pulse/core`) is inherited from a validated terminal health-c
 
 ## Current status
 
-**Pre-release.** Milestones M0-M3 are done (engine, read-only dashboard, consent-driven fixes, local AI audit summary), M4 is in progress (accessibility pass, testing, docs, i18n), M5 is the v1.0 release. The dashboard, API, and tests are all real and runnable today - see [Quick start](#quick-start).
+**Pre-release.** Milestones M0-M3 are done (engine, read-only dashboard, consent-driven fixes, local AI audit summary), M4 is done (accessibility pass, testing, docs, i18n), M5 is in progress (v1.0 release hygiene: Biome lint, changelog, tag). The dashboard, API, and tests are all real and runnable today - see [Quick start](#quick-start).
 
 ## Features
 
@@ -23,6 +23,7 @@ The engine (`@kanam-pulse/core`) is inherited from a validated terminal health-c
 - **Read-only dashboard** (`packages/web`, Vite + React + TypeScript) that consumes `GET /api/run` and renders the score, per-check status, and the fixes panel. No dashboard route mutates anything by itself.
 - **Consent-driven fixes**: `GET /api/fixes/scan` lists safe, regenerable cache targets and heavy processes. A **dry-run** (`POST /api/fixes/dry-run`) estimates what would be freed or killed without executing anything. Applying (`POST /api/fixes/apply`) requires explicit per-target selection and an accessible confirmation dialog, and the server refuses the request unless it carries `confirmed: true`.
   - The scan covers only well-known cache locations (app caches, developer caches, npm/yarn caches) and never user data.
+  - Cleanup is **trash-style**: each cache entry is moved to the macOS Trash via `/usr/bin/trash`, never permanently deleted. If the Trash is unavailable, the cleaner refuses to run instead of falling back to a destructive delete.
   - Heavy processes are killable only below a strict protected list (`kernel_task`, `launchd`, `WindowServer`, `loginwindow`, `mds`, `systemd`, `init`, ...) and diagnostic commands the engine itself spawns are never listed.
 - **Local AI audit summary**: the "Explain this audit" button sends only aggregate metrics (scores, statuses, sanitized suggestion text - never paths or file contents) to a local Ollama instance. The prompt is deliberately summary-only. If Ollama is not running, the button stays but reports a short notice; the audit flow never depends on this feature.
 - **Live metrics over SSE**: `GET /api/metrics/stream` pushes memory (bytes) and 1-minute load average every 2 seconds.
@@ -91,7 +92,7 @@ Open http://localhost:5173, run a scan, and try the flow. To confirm the API alo
 
 1. **Granular consent**: destructive actions are opt-in per target. Nothing is cleaned or killed without explicit selection plus an explicit confirmation, and the server enforces `confirmed: true` on `/api/fixes/apply`.
 2. **Dry-run first**: applying stays disabled until a dry-run has produced an estimate. The dry-run endpoint never executes a cleanup or kill.
-3. **Only regenerable caches**: the cleaner touches well-known cache locations (app/developer/npm/yarn caches) whose contents are re-downloadable. Never user data, documents, or anything ambiguous. Trash-style removal is the documented design goal for v1; today cache contents are removed directly because they are regenerable by definition.
+3. **Only regenerable caches, trash-style removal**: the cleaner touches well-known cache locations (app/developer/npm/yarn caches) whose contents are re-downloadable, and never user data, documents, or anything ambiguous. Every removed entry goes to the macOS Trash (via `/usr/bin/trash`) instead of being permanently deleted; if trash-style removal is unavailable, the cleaner refuses to run. Per the SPEC: destructive operations never use immediate permanent delete where trash-style is available.
 4. **Protected processes are untouchable**: a strict blacklist (`kernel_task`, `launchd`, `WindowServer`, `mds`, ...) plus diagnostic commands the tool itself spawns are never selectable or killable.
 5. **Zero telemetry**: no analytics, no crash reporting, no network calls beyond your own `127.0.0.1` API - and, when enabled, your own local Ollama. The AI prompt contains only aggregate scores and sanitized suggestion text, never paths or personal data.
 
@@ -111,7 +112,7 @@ npm run test            # runs every workspace's vitest suite
 npm run test --workspace kanam-pulse-web    # dashboard + a11y tests only
 ```
 
-Current suite: **116 tests, all green** - 59 in `core` (checks, runner, history, cleaner, processes, audit sanitization, format), 21 in `server` (API routes, consent enforcement, SSE stream, explain endpoint), 36 in `web` (components, hooks, i18n, and axe-core accessibility). The CI workflow (GitHub Actions, Node 20, ubuntu-22.04) gates `build` + `test` on every push/PR to `main`.
+Current suite: **118 tests, all green** - 61 in `core` (checks, runner, history, cleaner, processes, audit sanitization, format), 21 in `server` (API routes, consent enforcement, SSE stream, explain endpoint), 36 in `web` (components, hooks, i18n, and axe-core accessibility). The CI workflow (GitHub Actions, Node 20, ubuntu-22.04) gates `build` + `test` on every push/PR to `main`.
 
 ## Roadmap
 
@@ -121,12 +122,12 @@ Current suite: **116 tests, all green** - 59 in `core` (checks, runner, history,
 | M1 | Engine extracted to `packages/core` + read-only dashboard + live metrics | Done |
 | M2 | Consent-driven fixes: server endpoints + accessible web UI | Done |
 | M3 | Local AI audit summary (Ollama, privacy-sanitized prompt) + test runner | Done |
-| M4 | Accessibility pass + docs + centralized i18n (ES default / EN pack) + polish | In progress |
-| M5 | v1.0.0 release + community announcement | Planned |
+| M4 | Accessibility pass + docs + centralized i18n (ES default / EN pack) + polish | Done |
+| M5 | v1.0.0 release + community announcement | In progress |
 
 ## Contributing
 
-The repo is public and community-first, and the project treats accessibility and privacy as product features. Issues and PRs are welcome. Please keep GitHub-facing content in English (UI strings are Spanish by default by design - see `packages/web/src/i18n/`), run the full test suite before pushing, and avoid introducing telemetry or anything that changes the local-first, consent-driven contract.
+The repo is public and community-first, and the project treats accessibility and privacy as product features. Issues and PRs are welcome - see [CONTRIBUTING.md](CONTRIBUTING.md) for the bug/feature flow, dev setup, and conventions. Please keep GitHub-facing content in English (UI strings are Spanish by default by design - see `packages/web/src/i18n/`), run the full test suite before pushing, and avoid introducing telemetry or anything that changes the local-first, consent-driven contract.
 
 ## Credits
 

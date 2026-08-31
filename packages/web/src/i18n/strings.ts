@@ -31,10 +31,12 @@ const es = {
   'fixes.dryRunHeading': 'Estimación de la simulación (no se ejecutó nada)',
   'fixes.wouldFree': 'Liberaría:',
   'fixes.noTargetsResolved': 'Ningún objetivo resuelto del escaneo actual.',
-  'fixes.noneFound': 'No se encontraron cachés ni procesos pesados para corregir.',
+  'fixes.noneFound':
+    'No se encontraron cachés ni procesos pesados para corregir.',
   'fixes.caches': 'Cachés',
   'fixes.heavyProcesses': 'Procesos pesados',
-  'fixes.scanPrompt': 'Ejecuta un escaneo para ver cachés y procesos pesados corregibles.',
+  'fixes.scanPrompt':
+    'Ejecuta un escaneo para ver cachés y procesos pesados corregibles.',
   'fixes.applyResultHeading': 'Resultado',
   'fixes.freed': 'Liberado:',
   'fixes.killedPids': 'PIDs terminados:',
@@ -43,7 +45,8 @@ const es = {
   'fixes.confirmTitle': 'Confirmar correcciones',
   'fixes.confirmMessage':
     'Esto liberará {cacheCount} objetivo(s) de caché y terminará {processCount} proceso(s): {targets}. Esta acción no se puede deshacer.',
-  'fixes.confirmGeneric': '¿Confirmar la aplicación de las correcciones seleccionadas?',
+  'fixes.confirmGeneric':
+    '¿Confirmar la aplicación de las correcciones seleccionadas?',
   'fixes.processLabel': 'PID {pid} {command} (CPU {cpuPct}%, MEM {memPct}%)',
   // ConfirmDialog
   'dialog.cancel': 'Cancelar',

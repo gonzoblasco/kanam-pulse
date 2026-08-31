@@ -1,5 +1,5 @@
 // tests/cpu.test.js
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { checkCpu } from '../src/checks/cpu.js';
 
 // Mock runSafe to return a fixed ps output.
@@ -29,7 +29,10 @@ describe('checkCpu', () => {
     const top = result.details.topProcesses || [];
     expect(top.map((p) => p.pid)).not.toContain(1000);
 
-    Object.defineProperty(process, 'pid', { value: origPid, configurable: true });
+    Object.defineProperty(process, 'pid', {
+      value: origPid,
+      configurable: true,
+    });
   });
 
   it('returns a score and status', async () => {

@@ -7,8 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "lint": "eslint . --ext .tsx,.ts"
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@kanam-pulse/core": "0.1.0",

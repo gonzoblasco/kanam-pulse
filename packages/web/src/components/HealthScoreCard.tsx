@@ -6,9 +6,10 @@
 //  - the result region is aria-live="polite": screen readers announce the
 //    explanation when it arrives (and the unavailable notice)
 
-import React, { useState } from 'react';
-import { useHealthData } from '../hooks/useHealthData';
+import type React from 'react';
+import { useState } from 'react';
 import { useExplainAudit } from '../hooks/useExplainAudit';
+import { useHealthData } from '../hooks/useHealthData';
 import { useI18n } from '../i18n/useI18n';
 
 interface HealthScoreCardProps {
@@ -32,7 +33,9 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
     return (
       <div style={cardStyle}>
         <h3 style={{ textAlign: 'center' }}>{title}</h3>
-        <p style={{ textAlign: 'center', color: '#666' }}>{t('health.loading')}</p>
+        <p style={{ textAlign: 'center', color: '#666' }}>
+          {t('health.loading')}
+        </p>
       </div>
     );
   }
@@ -51,10 +54,16 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
   const score = health.overall;
   const status = health.status; // healthy | attention | degraded
   const color =
-    status === 'healthy' ? '#2ecc71' : status === 'attention' ? '#f39c12' : '#e74c3c';
+    status === 'healthy'
+      ? '#2ecc71'
+      : status === 'attention'
+        ? '#f39c12'
+        : '#e74c3c';
 
   const showResult =
-    explain.loading || explain.explanation || (explain.available === false && showUnavailable);
+    explain.loading ||
+    explain.explanation ||
+    (explain.available === false && showUnavailable);
 
   return (
     <div style={cardStyle}>
@@ -62,7 +71,9 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
       <div style={{ textAlign: 'center', fontSize: '2.5em', margin: '10px 0' }}>
         {score}%
       </div>
-      <p style={{ textAlign: 'center', textTransform: 'uppercase' }}>{status}</p>
+      <p style={{ textAlign: 'center', textTransform: 'uppercase' }}>
+        {status}
+      </p>
       <div
         style={{
           width: '100%',
@@ -111,13 +122,11 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
             whiteSpace: 'pre-wrap',
           }}
         >
-          {explain.loading ? (
-            t('health.preparing')
-          ) : explain.explanation ? (
-            explain.explanation
-          ) : (
-            t('health.ollamaUnavailable')
-          )}
+          {explain.loading
+            ? t('health.preparing')
+            : explain.explanation
+              ? explain.explanation
+              : t('health.ollamaUnavailable')}
         </div>
       )}
 

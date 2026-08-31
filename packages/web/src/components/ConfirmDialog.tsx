@@ -6,7 +6,8 @@
 // - Escape closes
 // - Focus restored to the element that opened the dialog on close
 
-import React, { useEffect, useId, useRef } from 'react';
+import type React from 'react';
+import { useEffect, useId, useRef } from 'react';
 import { useI18n } from '../i18n/useI18n';
 
 interface ConfirmDialogProps {
@@ -52,9 +53,7 @@ const buttonBase: React.CSSProperties = {
   backgroundColor: '#f5f6f8',
 };
 
-function FocusableElements(
-  container: HTMLElement,
-): HTMLElement[] {
+function FocusableElements(container: HTMLElement): HTMLElement[] {
   const candidates = container.querySelectorAll<HTMLElement>(
     'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
   );

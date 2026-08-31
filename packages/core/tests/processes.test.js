@@ -1,6 +1,10 @@
 // tests/processes.test.js
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { listHeavyProcesses, scanHeavyProcesses, killProcess } from '../src/fix/processes.js';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  killProcess,
+  listHeavyProcesses,
+  scanHeavyProcesses,
+} from '../src/fix/processes.js';
 
 const mockRunSafe = vi.fn();
 vi.mock('../src/core/exec.js', () => ({
@@ -39,7 +43,10 @@ describe('listHeavyProcesses', () => {
     Object.defineProperty(process, 'pid', { value: 123, configurable: true });
     const rows = await listHeavyProcesses();
     expect(rows.map((r) => r.pid)).not.toContain(123);
-    Object.defineProperty(process, 'pid', { value: origPid, configurable: true });
+    Object.defineProperty(process, 'pid', {
+      value: origPid,
+      configurable: true,
+    });
   });
 
   it('excludes diagnostic commands (du, ps, etc.)', async () => {

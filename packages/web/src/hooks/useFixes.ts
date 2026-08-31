@@ -5,11 +5,11 @@
 //   POST /api/fixes/apply
 // Follows the same pattern as useHealthData.ts (loading/error/data).
 
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import type {
-  FixScanResult,
-  FixDryRunResult,
   FixApplyResult,
+  FixDryRunResult,
+  FixScanResult,
 } from '../types/api';
 
 async function postJSON<T>(url: string, body: unknown): Promise<T> {
@@ -41,13 +41,18 @@ export interface UseFixes {
   error: string | null;
   scan: () => Promise<void>;
   dryRun: (targets: string[]) => Promise<void>;
-  apply: (caches: string[], processes: number[]) => Promise<FixApplyResult | null>;
+  apply: (
+    caches: string[],
+    processes: number[],
+  ) => Promise<FixApplyResult | null>;
   reset: () => void;
 }
 
 export function useFixes(): UseFixes {
   const [scanResult, setScanResult] = useState<FixScanResult | null>(null);
-  const [dryRunResult, setDryRunResult] = useState<FixDryRunResult | null>(null);
+  const [dryRunResult, setDryRunResult] = useState<FixDryRunResult | null>(
+    null,
+  );
   const [applyResult, setApplyResult] = useState<FixApplyResult | null>(null);
   const [scanning, setScanning] = useState(false);
   const [dryRunning, setDryRunning] = useState(false);

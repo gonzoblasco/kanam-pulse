@@ -57,11 +57,17 @@ export function buildAuditSummaryPrompt(battery) {
   const checks = Array.isArray(b.checks) ? b.checks : [];
 
   const lines = [];
-  lines.push('You are a system health analyst. Summarize the following system health check audit in clear, friendly, non-technical human language. Keep it concise and actionable.');
-  lines.push('Use ONLY the aggregate metrics provided below. Do NOT invent, guess, or reference any file paths, directories, or personal data.');
+  lines.push(
+    'You are a system health analyst. Summarize the following system health check audit in clear, friendly, non-technical human language. Keep it concise and actionable.',
+  );
+  lines.push(
+    'Use ONLY the aggregate metrics provided below. Do NOT invent, guess, or reference any file paths, directories, or personal data.',
+  );
   lines.push('');
   lines.push('SYSTEM HEALTH AUDIT');
-  lines.push(`Overall score: ${typeof b.overall === 'number' ? b.overall : 0}/100`);
+  lines.push(
+    `Overall score: ${typeof b.overall === 'number' ? b.overall : 0}/100`,
+  );
   lines.push(`Status: ${b.status || 'unknown'}`);
   if (b.timestamp) lines.push(`Timestamp: ${b.timestamp}`);
   lines.push('');
@@ -82,7 +88,9 @@ export function buildAuditSummaryPrompt(battery) {
   lines.push('Suggestions (by check, priority, action):');
   let suggestionCount = 0;
   for (const check of checks) {
-    const suggestions = Array.isArray(check.suggestions) ? check.suggestions : [];
+    const suggestions = Array.isArray(check.suggestions)
+      ? check.suggestions
+      : [];
     for (const suggestion of suggestions) {
       const priority = suggestion.priority || 'low';
       const action = sanitizeText(suggestion.action);
@@ -96,7 +104,9 @@ export function buildAuditSummaryPrompt(battery) {
   }
 
   lines.push('');
-  lines.push('Write a short, friendly summary of this audit in 2-4 sentences, highlighting what is healthy, what needs attention, and the top priority action. Do not mention paths or file names.');
+  lines.push(
+    'Write a short, friendly summary of this audit in 2-4 sentences, highlighting what is healthy, what needs attention, and the top priority action. Do not mention paths or file names.',
+  );
 
   return lines.join('\n');
 }
@@ -129,7 +139,7 @@ export async function isOllamaAvailable(baseUrl = DEFAULT_BASE_URL) {
 
     if (!response.ok) return false;
     const payload = await response.json();
-    return Array.isArray(payload && payload.models);
+    return Array.isArray(payload?.models);
   } catch {
     // Network failure, timeout, bad JSON, or anything else: treat as unavailable.
     return false;
@@ -152,7 +162,12 @@ export async function isOllamaAvailable(baseUrl = DEFAULT_BASE_URL) {
  */
 export async function explainAudit(
   battery,
-  { baseUrl = DEFAULT_BASE_URL, model = DEFAULT_MODEL, maxTokens = 300, timeoutMs = 30000 } = {},
+  {
+    baseUrl = DEFAULT_BASE_URL,
+    model = DEFAULT_MODEL,
+    maxTokens = 300,
+    timeoutMs = 30000,
+  } = {},
 ) {
   if (!battery || typeof battery !== 'object') {
     return { ok: false, error: 'invalid battery' };
@@ -179,17 +194,26 @@ export async function explainAudit(
     }
 
     if (!response.ok) {
-      return { ok: false, error: `ollama generate failed: HTTP ${response.status}` };
+      return {
+        ok: false,
+        error: `ollama generate failed: HTTP ${response.status}`,
+      };
     }
 
     const payload = await response.json();
-    const explanation = typeof payload.response === 'string' ? payload.response.trim() : '';
+    const explanation =
+      typeof payload.response === 'string' ? payload.response.trim() : '';
     if (!explanation) {
       return { ok: false, error: 'ollama returned an empty response' };
     }
     return { ok: true, explanation };
   } catch (err) {
-    const reason = err && err.name === 'AbortError' ? 'timeout' : err && err.message ? err.message : String(err);
+    const reason =
+      err && err.name === 'AbortError'
+        ? 'timeout'
+        : err?.message
+          ? err.message
+          : String(err);
     return { ok: false, error: `ollama unavailable: ${reason}` };
   }
 }

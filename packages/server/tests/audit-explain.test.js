@@ -3,7 +3,7 @@
 // The core's isOllamaAvailable/explainAudit are mocked so tests never touch
 // a real (or missing) local Ollama instance.
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@kanam-pulse/core', async (importOriginal) => {
   const actual = await importOriginal();
@@ -15,8 +15,8 @@ vi.mock('@kanam-pulse/core', async (importOriginal) => {
   };
 });
 
+import { explainAudit, isOllamaAvailable, runBattery } from '@kanam-pulse/core';
 import { buildApp } from '../src/app.js';
-import { runBattery, isOllamaAvailable, explainAudit } from '@kanam-pulse/core';
 
 const sampleBattery = {
   overall: 88,
@@ -60,7 +60,10 @@ describe('POST /api/audit/explain', () => {
 
   it('returns available:true with explanation when Ollama answers', async () => {
     vi.mocked(isOllamaAvailable).mockResolvedValue(true);
-    vi.mocked(explainAudit).mockResolvedValue({ ok: true, explanation: 'Your system looks good.' });
+    vi.mocked(explainAudit).mockResolvedValue({
+      ok: true,
+      explanation: 'Your system looks good.',
+    });
     const app = await buildApp();
     const res = await app.inject({
       method: 'POST',
@@ -69,7 +72,10 @@ describe('POST /api/audit/explain', () => {
     });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
-    expect(body).toEqual({ available: true, explanation: 'Your system looks good.' });
+    expect(body).toEqual({
+      available: true,
+      explanation: 'Your system looks good.',
+    });
     expect(explainAudit).toHaveBeenCalledWith(sampleBattery);
     expect(runBattery).not.toHaveBeenCalled();
     await app.close();
@@ -77,7 +83,10 @@ describe('POST /api/audit/explain', () => {
 
   it('propagates the explainAudit error object', async () => {
     vi.mocked(isOllamaAvailable).mockResolvedValue(true);
-    vi.mocked(explainAudit).mockResolvedValue({ ok: false, error: 'ollama generate failed: HTTP 500' });
+    vi.mocked(explainAudit).mockResolvedValue({
+      ok: false,
+      error: 'ollama generate failed: HTTP 500',
+    });
     const app = await buildApp();
     const res = await app.inject({
       method: 'POST',
@@ -86,18 +95,31 @@ describe('POST /api/audit/explain', () => {
     });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
-    expect(body).toEqual({ available: true, error: 'ollama generate failed: HTTP 500' });
+    expect(body).toEqual({
+      available: true,
+      error: 'ollama generate failed: HTTP 500',
+    });
     await app.close();
   });
 
   it('runs a fresh battery when the body has no battery', async () => {
     vi.mocked(isOllamaAvailable).mockResolvedValue(true);
-    vi.mocked(explainAudit).mockResolvedValue({ ok: true, explanation: 'Fresh run summary.' });
+    vi.mocked(explainAudit).mockResolvedValue({
+      ok: true,
+      explanation: 'Fresh run summary.',
+    });
     const app = await buildApp();
-    const res = await app.inject({ method: 'POST', url: '/api/audit/explain', payload: {} });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/audit/explain',
+      payload: {},
+    });
     expect(res.statusCode).toBe(200);
     const body = JSON.parse(res.body);
-    expect(body).toEqual({ available: true, explanation: 'Fresh run summary.' });
+    expect(body).toEqual({
+      available: true,
+      explanation: 'Fresh run summary.',
+    });
     expect(runBattery).toHaveBeenCalledTimes(1);
     expect(explainAudit).toHaveBeenCalledWith(sampleBattery);
     await app.close();

@@ -41,7 +41,9 @@ const DIAGNOSTIC_COMMANDS = new Set([
  * @returns {Promise<Array<{pid:number, command:string, cpuPct:number, memPct:number}>>}
  */
 export async function listHeavyProcesses(limit = 8) {
-  const res = await runSafe(`ps -Aceo pid,pcpu,pmem,comm -r | head -${limit + 1}`);
+  const res = await runSafe(
+    `ps -Aceo pid,pcpu,pmem,comm -r | head -${limit + 1}`,
+  );
   if (!res) return [];
 
   const currentPid = process.pid;

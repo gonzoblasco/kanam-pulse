@@ -2,9 +2,9 @@
 // Persist run history to a local JSON file so health can be tracked over time.
 // Stores only the essential per-check scores + overall, not full details.
 
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 const HISTORY_DIR = () => path.join(os.homedir(), '.system-health-check');
 const HISTORY_FILE = () => path.join(HISTORY_DIR(), 'history.json');
@@ -75,11 +75,18 @@ export function appendHistory(battery) {
  */
 export function summarizeTrend(history = readHistory()) {
   if (history.length === 0) {
-    return { count: 0, latest: null, previous: null, delta: null, direction: 'none' };
+    return {
+      count: 0,
+      latest: null,
+      previous: null,
+      delta: null,
+      direction: 'none',
+    };
   }
 
   const latest = history[history.length - 1].overall;
-  const previous = history.length >= 2 ? history[history.length - 2].overall : null;
+  const previous =
+    history.length >= 2 ? history[history.length - 2].overall : null;
   const delta = previous !== null ? latest - previous : null;
 
   let direction = 'none';

@@ -2,11 +2,14 @@
 // Hook-level tests for the consent-gated fixes flow. fetch is stubbed
 // globally so no server is ever contacted (the tests run offline).
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { act, renderHook, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import type {
+  FixApplyResult,
+  FixDryRunResult,
+  FixScanResult,
+} from '../types/api';
 import { useFixes } from './useFixes';
-import type { FixScanResult, FixDryRunResult, FixApplyResult } from '../types/api';
 
 const scanResult: FixScanResult = {
   caches: [
@@ -34,20 +37,24 @@ const applyResult: FixApplyResult = {
 };
 
 /** Install a fetch stub that routes on method + URL. */
-function stubFetch(handlers: Record<string, (init?: RequestInit) => unknown | Promise<unknown>>) {
-  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-    const url = String(input);
-    const method = (init?.method ?? 'GET').toUpperCase();
-    const route = `${method} ${url}`;
-    const handler = handlers[route];
-    if (!handler) throw new Error(`unexpected fetch: ${route}`);
-    const body = await handler(init);
-    return {
-      ok: true,
-      status: 200,
-      json: async () => body,
-    } as Response;
-  });
+function stubFetch(
+  handlers: Record<string, (init?: RequestInit) => unknown | Promise<unknown>>,
+) {
+  const fetchMock = vi.fn(
+    async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input);
+      const method = (init?.method ?? 'GET').toUpperCase();
+      const route = `${method} ${url}`;
+      const handler = handlers[route];
+      if (!handler) throw new Error(`unexpected fetch: ${route}`);
+      const body = await handler(init);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => body,
+      } as Response;
+    },
+  );
   vi.stubGlobal('fetch', fetchMock);
   return fetchMock;
 }
@@ -127,7 +134,10 @@ describe('useFixes', () => {
       applied = await result.current.apply(['cache-brew'], [7337]);
     });
 
-    expect(fetchMock).toHaveBeenCalledWith('/api/fixes/apply', expect.anything());
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/fixes/apply',
+      expect.anything(),
+    );
     expect(applied).toEqual(applyResult);
     expect(result.current.applyResult).toEqual(applyResult);
     expect(result.current.applying).toBe(false);
