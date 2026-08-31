@@ -2,9 +2,19 @@
 // Shared API response types for the web dashboard. Mirrors the server
 // routes (packages/server) and the @kanam-pulse/core engine shapes.
 
+export interface HealthCheckResult {
+  id: string;
+  name: string;
+  score: number;
+  status: string;
+  suggestions?: Array<{ priority: string; action: string }>;
+}
+
 export interface HealthRunData {
   overall: number;
   status: 'healthy' | 'attention' | 'degraded';
+  timestamp?: string;
+  checks?: HealthCheckResult[];
   runInfo: {
     elapsedMs: number;
     total: number;
@@ -38,6 +48,12 @@ export interface FixDryRunResult {
   wouldFreeBytes: number;
   caches: CacheTarget[];
   processes: HeavyProcess[];
+}
+
+export interface ExplainAuditResponse {
+  available: boolean;
+  explanation?: string;
+  error?: string;
 }
 
 export interface FixApplyResult {

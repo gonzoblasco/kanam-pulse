@@ -1,6 +1,14 @@
 // HealthScoreCard.tsx
-import React from 'react';
+// Renders the aggregate health score from /api/run plus the optional
+// "Explain this audit" summary (local Ollama via POST /api/audit/explain).
+// WCAG notes:
+//  - the explain button has an accessible label
+//  - the result region is aria-live="polite": screen readers announce the
+//    explanation when it arrives (and the unavailable notice)
+
+import React, { useState } from 'react';
 import { useHealthData } from '../hooks/useHealthData';
+import { useExplainAudit } from '../hooks/useExplainAudit';
 
 interface HealthScoreCardProps {
   title: string;
@@ -8,6 +16,15 @@ interface HealthScoreCardProps {
 
 const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
   const { health, loading, error } = useHealthData();
+  const explain = useExplainAudit();
+  const [showUnavailable, setShowUnavailable] = useState(false);
+
+  const handleExplain = async () => {
+    // Always re-show the notice on a fresh attempt so users know the outcome;
+    // it disappears again if the follow-up request succeeds.
+    setShowUnavailable(true);
+    await explain.explain(health);
+  };
 
   if (loading) {
     return (
@@ -34,6 +51,9 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
   const color =
     status === 'healthy' ? '#2ecc71' : status === 'attention' ? '#f39c12' : '#e74c3c';
 
+  const showResult =
+    explain.loading || explain.explanation || (explain.available === false && showUnavailable);
+
   return (
     <div style={cardStyle}>
       <h3 style={{ textAlign: 'center' }}>{title}</h3>
@@ -54,6 +74,56 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
           style={{ height: '100%', width: `${score}%`, backgroundColor: color }}
         />
       </div>
+
+      <div style={{ marginTop: '16px', textAlign: 'center' }}>
+        <button
+          type="button"
+          onClick={handleExplain}
+          disabled={explain.loading}
+          style={{
+            padding: '8px 16px',
+            borderRadius: '6px',
+            border: '1px solid #ccc',
+            backgroundColor: '#2563eb',
+            borderColor: '#2563eb',
+            color: '#fff',
+            cursor: explain.loading ? 'default' : 'pointer',
+          }}
+        >
+          {explain.loading ? 'Explaining...' : 'Explain this audit'}
+        </button>
+      </div>
+
+      {showResult && (
+        <div
+          role="status"
+          aria-live="polite"
+          style={{
+            marginTop: '14px',
+            padding: '12px',
+            borderRadius: '6px',
+            backgroundColor: '#f5f6f8',
+            border: '1px solid #ddd',
+            fontSize: '0.9em',
+            lineHeight: 1.5,
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {explain.loading ? (
+            'Preparing explanation...'
+          ) : explain.explanation ? (
+            explain.explanation
+          ) : (
+            'Ollama is not available, so no explanation could be generated.'
+          )}
+        </div>
+      )}
+
+      {explain.error && (
+        <p role="alert" style={{ color: '#c0392b', marginBottom: 0 }}>
+          {explain.error}
+        </p>
+      )}
     </div>
   );
 };
