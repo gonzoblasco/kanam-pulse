@@ -115,7 +115,7 @@ describe('ConfirmDialog', () => {
 
   it('disables both actions while busy and shows the busy label', () => {
     renderDialog({ busy: true });
-    expect(screen.getByRole('button', { name: 'Applying...' })).toBeDisabled();
+    expect(screen.getByRole('button', { name: 'Aplicando...' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancel' })).toBeDisabled();
     expect(screen.queryByRole('button', { name: 'Apply' })).not.toBeInTheDocument();
   });

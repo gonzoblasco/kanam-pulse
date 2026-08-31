@@ -1,0 +1,58 @@
+# CI pipeline for kanam-pulse (M4 U1).
+# Runs on every push to main and on pull requests targeting main:
+#   - install (npm ci)
+#   - tests across all workspaces (vitest, jsdom env for the web)
+#   - build across all workspaces (tsc for server, vite for web)
+#
+# Lint (packages/web has a `lint` script) is intentionally NOT gated here:
+# eslint is not installed in the repo yet (no eslint deps nor a config
+# exist - the script currently fails with "eslint: command not found").
+# Installing the full eslint + react-hooks setup is tracked separately for
+# M4; test+build are the CI gates for now. Remove this note once lint is
+# wired into CI.
+#
+# Node 20 is the workspace engine floor (root package.json: node >=20).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  quality:
+    name: Test + Build (Node 20)
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build workspaces
+        run: npm run build --workspaces --if-present
+
+      - name: Test workspaces
+        run: npm run test --workspaces --if-present
+
+      - name: Upload web test report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-vitest-report
+          path: packages/web/coverage
+          if-no-files-found: ignore

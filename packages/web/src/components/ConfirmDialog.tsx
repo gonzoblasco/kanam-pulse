@@ -7,6 +7,7 @@
 // - Focus restored to the element that opened the dialog on close
 
 import React, { useEffect, useId, useRef } from 'react';
+import { useI18n } from '../i18n/useI18n';
 
 interface ConfirmDialogProps {
   title: string;
@@ -64,11 +65,13 @@ const ConfirmDialog = ({
   title,
   message,
   confirmLabel,
-  cancelLabel = 'Cancel',
+  cancelLabel,
   busy = false,
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) => {
+  const { t } = useI18n();
+  const cancelLabelValue = cancelLabel ?? t('dialog.cancel');
   const titleId = useId();
   const messageId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
@@ -133,7 +136,7 @@ const ConfirmDialog = ({
             disabled={busy}
             style={buttonBase}
           >
-            {cancelLabel}
+            {cancelLabelValue}
           </button>
           <button
             type="button"
@@ -146,7 +149,7 @@ const ConfirmDialog = ({
               color: '#fff',
             }}
           >
-            {busy ? 'Applying...' : confirmLabel}
+            {busy ? t('dialog.applying') : confirmLabel}
           </button>
         </div>
       </div>

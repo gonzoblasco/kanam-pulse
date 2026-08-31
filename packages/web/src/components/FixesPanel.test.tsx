@@ -79,12 +79,12 @@ describe('FixesPanel', () => {
     render(<FixesPanel />);
 
     // Before scan: Apply is disabled.
-    const apply = screen.getByRole('button', { name: 'Apply' });
+    const apply = screen.getByRole('button', { name: 'Aplicar' });
     expect(apply).toBeDisabled();
 
     // Scan loads and renders checkboxes.
-    await user.click(screen.getByRole('button', { name: 'Scan' }));
-    const caches = await screen.findByRole('group', { name: /caches/i });
+    await user.click(screen.getByRole('button', { name: 'Escanear' }));
+    const caches = await screen.findByRole('group', { name: /cachés/i });
     const checkbox = within(caches).getByRole('checkbox', {
       name: /Homebrew cache/i,
     });
@@ -94,11 +94,11 @@ describe('FixesPanel', () => {
     expect(apply).toBeDisabled();
 
     // Dry-run produces the estimate and unlocks Apply.
-    await user.click(screen.getByRole('button', { name: 'Dry-run' }));
+    await user.click(screen.getByRole('button', { name: 'Simular' }));
     await waitFor(() => expect(apply).toBeEnabled());
 
     // The estimate is announced in the polite status region.
-    expect(screen.getByText(/would free/i)).toBeInTheDocument();
+    expect(screen.getByText(/liberaría/i)).toBeInTheDocument();
     expect(screen.getByText(/250\.0 MB/)).toBeInTheDocument();
   });
 
@@ -107,13 +107,13 @@ describe('FixesPanel', () => {
     render(<FixesPanel onResult={vi.fn()} />);
 
     // Reach the enabled Apply state.
-    await user.click(screen.getByRole('button', { name: 'Scan' }));
-    const caches = await screen.findByRole('group', { name: /caches/i });
+    await user.click(screen.getByRole('button', { name: 'Escanear' }));
+    const caches = await screen.findByRole('group', { name: /cachés/i });
     await user.click(
       within(caches).getByRole('checkbox', { name: /Homebrew cache/i }),
     );
-    await user.click(screen.getByRole('button', { name: 'Dry-run' }));
-    const apply = screen.getByRole('button', { name: 'Apply' });
+    await user.click(screen.getByRole('button', { name: 'Simular' }));
+    const apply = screen.getByRole('button', { name: 'Aplicar' });
     await waitFor(() => expect(apply).toBeEnabled());
 
     // Apply opens the modal dialog.
@@ -122,12 +122,12 @@ describe('FixesPanel', () => {
     expect(dialog).toHaveAttribute('aria-modal', 'true');
 
     // Cancel closes it without applying (only two buttons remain).
-    await user.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+    await user.click(within(dialog).getByRole('button', { name: 'Cancelar' }));
     await waitFor(() =>
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
     );
     expect(
-      screen.queryByRole('button', { name: 'Scan' }),
+      screen.queryByRole('button', { name: 'Escanear' }),
     ).toBeInTheDocument();
   });
 
@@ -135,11 +135,11 @@ describe('FixesPanel', () => {
     const user = userEvent.setup();
     render(<FixesPanel />);
 
-    await user.click(screen.getByRole('button', { name: 'Scan' }));
-    await user.click(await screen.findByRole('button', { name: 'Scan' }));
+    await user.click(screen.getByRole('button', { name: 'Escanear' }));
+    await user.click(await screen.findByRole('button', { name: 'Escanear' }));
 
     await waitFor(() =>
-      expect(screen.getByRole('group', { name: /caches/i })).toBeInTheDocument(),
+      expect(screen.getByRole('group', { name: /cachés/i })).toBeInTheDocument(),
     );
     // Both cached targets render after the second scan.
     expect(

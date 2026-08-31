@@ -5,6 +5,7 @@
 
 import React, { useMemo, useState } from 'react';
 import { useFixes } from '../hooks/useFixes';
+import { useI18n } from '../i18n/useI18n';
 import ConfirmDialog from './ConfirmDialog';
 import type { CacheTarget, HeavyProcess } from '../types/api';
 
@@ -97,6 +98,7 @@ function TargetCheckbox({
 }
 
 const FixesPanel = ({ onResult }: FixesPanelProps) => {
+  const { t } = useI18n();
   const fixes = useFixes();
   const [selectedCaches, setSelectedCaches] = useState<Set<string>>(new Set());
   const [selectedProcesses, setSelectedProcesses] = useState<Set<number>>(new Set());
@@ -119,11 +121,18 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
     }
     for (const proc of scanResult.processes) {
       if (selectedProcesses.has(proc.pid)) {
-        parts.push(`PID ${proc.pid} ${proc.command}`);
+        parts.push(
+          t('fixes.processLabel', {
+            pid: proc.pid,
+            command: proc.command,
+            cpuPct: proc.cpuPct,
+            memPct: proc.memPct,
+          }),
+        );
       }
     }
     return parts;
-  }, [scanResult, selectedCaches, selectedProcesses]);
+  }, [scanResult, selectedCaches, selectedProcesses, t]);
 
   const handleScan = async () => {
     await fixes.scan();
@@ -149,23 +158,23 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
 
   const dryRunLines = dryRunResult ? (
     <div role="status" aria-live="polite" style={sectionStyle}>
-      <h4>Dry-run estimate (nothing executed)</h4>
+      <h4>{t('fixes.dryRunHeading')}</h4>
       <p>
-        Would free:{' '}
+        {t('fixes.wouldFree')}{' '}
         <strong>{formatBytes(dryRunResult.wouldFreeBytes)}</strong>
       </p>
       {dryRunResult.caches.length === 0 && dryRunResult.processes.length === 0 && (
-        <p>No targets resolved from the current scan.</p>
+        <p>{t('fixes.noTargetsResolved')}</p>
       )}
     </div>
   ) : null;
 
   return (
     <div style={panelStyle}>
-      <h2>Fixes</h2>
+      <h2>{t('fixes.title')}</h2>
       <div style={buttonRowStyle}>
         <button type="button" onClick={handleScan} disabled={fixes.scanning} style={buttonBase}>
-          {fixes.scanning ? 'Scanning...' : 'Scan'}
+          {fixes.scanning ? t('fixes.scanning') : t('fixes.scan')}
         </button>
         <button
           type="button"
@@ -173,7 +182,7 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
           disabled={!hasSelection || fixes.dryRunning}
           style={buttonBase}
         >
-          {fixes.dryRunning ? 'Checking...' : 'Dry-run'}
+          {fixes.dryRunning ? t('fixes.checking') : t('fixes.dryRun')}
         </button>
         <button
           type="button"
@@ -181,7 +190,7 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
           disabled={applyDisabled}
           style={primaryButton}
         >
-          Apply
+          {t('fixes.apply')}
         </button>
       </div>
       {fixes.error && (
@@ -193,12 +202,12 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
       {scanResult ? (
         <>
           {scanResult.caches.length === 0 && scanResult.processes.length === 0 ? (
-            <p>No fixable caches or heavy processes found.</p>
+            <p>{t('fixes.noneFound')}</p>
           ) : (
             <>
               {scanResult.caches.length > 0 && (
                 <fieldset style={sectionStyle}>
-                  <legend>Caches</legend>
+                  <legend>{t('fixes.caches')}</legend>
                   {scanResult.caches.map((cache: CacheTarget) => (
                     <TargetCheckbox
                       key={cache.id}
@@ -220,7 +229,7 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
               )}
               {scanResult.processes.length > 0 && (
                 <fieldset style={sectionStyle}>
-                  <legend>Heavy processes</legend>
+                  <legend>{t('fixes.heavyProcesses')}</legend>
                   {scanResult.processes.map((proc: HeavyProcess) => (
                     <TargetCheckbox
                       key={proc.pid}
@@ -235,7 +244,12 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
                           return next;
                         });
                       }}
-                      label={`PID ${proc.pid} ${proc.command} (CPU ${proc.cpuPct}%, MEM ${proc.memPct}%)`}
+                      label={t('fixes.processLabel', {
+                        pid: proc.pid,
+                        command: proc.command,
+                        cpuPct: proc.cpuPct,
+                        memPct: proc.memPct,
+                      })}
                     />
                   ))}
                 </fieldset>
@@ -244,19 +258,22 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
           )}
         </>
       ) : (
-        !fixes.scanning && <p>Run a scan to see fixable caches and heavy processes.</p>
+        !fixes.scanning && <p>{t('fixes.scanPrompt')}</p>
       )}
 
       {dryRunLines}
 
       {fixes.applyResult && (
         <div role="status" aria-live="polite" style={sectionStyle}>
-          <h4>Apply result</h4>
-          <p>Freed: {formatBytes(fixes.applyResult.freedBytes)}</p>
-          <p>Killed PIDs: {fixes.applyResult.killedPids.join(', ') || 'none'}</p>
+          <h4>{t('fixes.applyResultHeading')}</h4>
+          <p>{t('fixes.freed')} {formatBytes(fixes.applyResult.freedBytes)}</p>
+          <p>
+            {t('fixes.killedPids')}{' '}
+            {fixes.applyResult.killedPids.join(', ') || t('fixes.none')}
+          </p>
           {fixes.applyResult.errors.length > 0 && (
             <div>
-              <strong>Errors:</strong>
+              <strong>{t('fixes.errors')}</strong>
               <ul>
                 {fixes.applyResult.errors.map((err, i) => (
                   <li key={i}>{err}</li>
@@ -269,13 +286,17 @@ const FixesPanel = ({ onResult }: FixesPanelProps) => {
 
       {dialogOpen && (
         <ConfirmDialog
-          title="Confirm fixes"
+          title={t('fixes.confirmTitle')}
           message={
             selectedSummary.length > 0
-              ? `This will clear ${selectedCaches.size} cache target(s) and kill ${selectedProcesses.size} process(es): ${selectedSummary.join(', ')}. This action cannot be undone.`
-              : 'Confirm applying the selected fixes?'
+              ? t('fixes.confirmMessage', {
+                  cacheCount: selectedCaches.size,
+                  processCount: selectedProcesses.size,
+                  targets: selectedSummary.join(', '),
+                })
+              : t('fixes.confirmGeneric')
           }
-          confirmLabel="Apply"
+          confirmLabel={t('fixes.apply')}
           busy={fixes.applying}
           onConfirm={handleConfirm}
           onCancel={() => setDialogOpen(false)}

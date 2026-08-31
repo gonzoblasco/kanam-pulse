@@ -9,12 +9,14 @@
 import React, { useState } from 'react';
 import { useHealthData } from '../hooks/useHealthData';
 import { useExplainAudit } from '../hooks/useExplainAudit';
+import { useI18n } from '../i18n/useI18n';
 
 interface HealthScoreCardProps {
   title: string;
 }
 
 const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
+  const { t } = useI18n();
   const { health, loading, error } = useHealthData();
   const explain = useExplainAudit();
   const [showUnavailable, setShowUnavailable] = useState(false);
@@ -30,7 +32,7 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
     return (
       <div style={cardStyle}>
         <h3 style={{ textAlign: 'center' }}>{title}</h3>
-        <p style={{ textAlign: 'center', color: '#666' }}>Loading...</p>
+        <p style={{ textAlign: 'center', color: '#666' }}>{t('health.loading')}</p>
       </div>
     );
   }
@@ -40,7 +42,7 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
       <div style={cardStyle}>
         <h3 style={{ textAlign: 'center' }}>{title}</h3>
         <p style={{ textAlign: 'center', color: '#c0392b' }}>
-          {error ?? 'Health data unavailable'}
+          {error ?? t('health.unavailable')}
         </p>
       </div>
     );
@@ -90,7 +92,7 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
             cursor: explain.loading ? 'default' : 'pointer',
           }}
         >
-          {explain.loading ? 'Explaining...' : 'Explain this audit'}
+          {explain.loading ? t('health.explaining') : t('health.explain')}
         </button>
       </div>
 
@@ -110,11 +112,11 @@ const HealthScoreCard = ({ title }: HealthScoreCardProps) => {
           }}
         >
           {explain.loading ? (
-            'Preparing explanation...'
+            t('health.preparing')
           ) : explain.explanation ? (
             explain.explanation
           ) : (
-            'Ollama is not available, so no explanation could be generated.'
+            t('health.ollamaUnavailable')
           )}
         </div>
       )}

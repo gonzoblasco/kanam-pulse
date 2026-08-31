@@ -55,7 +55,7 @@ describe('HealthScoreCard - Explain this audit', () => {
     render(<HealthScoreCard title="System Health" />);
     expect(await screen.findByText('88%')).toBeInTheDocument();
 
-    const button = screen.getByRole('button', { name: 'Explain this audit' });
+    const button = screen.getByRole('button', { name: 'Explicar auditoría' });
     expect(button).toBeEnabled();
     expect(button).toBeVisible();
   });
@@ -73,7 +73,7 @@ describe('HealthScoreCard - Explain this audit', () => {
     const user = userEvent.setup();
     render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explain this audit' }));
+    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
 
     // The explanation arrives and is announced in the polite status region.
     const text = await screen.findByText(/Your system looks good/);
@@ -83,7 +83,7 @@ describe('HealthScoreCard - Explain this audit', () => {
     // The battery from the health run is sent to the endpoint.
     expect(explainBody).toEqual({ battery: healthRun });
     // The button is interactive again.
-    expect(screen.getByRole('button', { name: 'Explain this audit' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Explicar auditoría' })).toBeEnabled();
   });
 
   it('shows a subtle notice when Ollama is unavailable', async () => {
@@ -95,14 +95,14 @@ describe('HealthScoreCard - Explain this audit', () => {
     const user = userEvent.setup();
     render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explain this audit' }));
+    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
 
-    const notice = await screen.findByText(/Ollama is not available/);
+    const notice = await screen.findByText(/Ollama no está disponible/);
     expect(notice).toBeInTheDocument();
     // The notice lives inside the polite live region.
     expect(notice.closest('[aria-live="polite"]')).not.toBeNull();
     // Button stays available for retry.
-    expect(screen.getByRole('button', { name: 'Explain this audit' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Explicar auditoría' })).toBeEnabled();
   });
 
   it('surfaces hard failures in a polite region and keeps the button for retry', async () => {
@@ -116,9 +116,9 @@ describe('HealthScoreCard - Explain this audit', () => {
     const user = userEvent.setup();
     render(<HealthScoreCard title="System Health" />);
     await screen.findByText('88%');
-    await user.click(screen.getByRole('button', { name: 'Explain this audit' }));
+    await user.click(screen.getByRole('button', { name: 'Explicar auditoría' }));
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('server offline'));
-    expect(screen.getByRole('button', { name: 'Explain this audit' })).toBeEnabled();
+    expect(screen.getByRole('button', { name: 'Explicar auditoría' })).toBeEnabled();
   });
 });
