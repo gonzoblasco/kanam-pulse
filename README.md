@@ -1,6 +1,6 @@
 # Kanam Pulse
 
-[![Status](https://img.shields.io/badge/status-pre--release-yellow)](https://github.com/gonzoblasco/kanam-pulse)
+[![Release](https://img.shields.io/badge/release-v1.0.0-blue)](https://github.com/gonzoblasco/kanam-pulse/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
 Kanam Pulse is a **local-first macOS health monitor and cleaner**: a web dashboard that reads the real pulse of your machine (disk, memory, CPU, security, network), scores it 0-100, explains the audit in plain language through a **local** AI model, and helps you act on it with explicit, granular consent.
@@ -15,7 +15,7 @@ The engine (`@kanam-pulse/core`) is inherited from a validated terminal health-c
 
 ## Current status
 
-**Pre-release.** Milestones M0-M3 are done (engine, read-only dashboard, consent-driven fixes, local AI audit summary), M4 is done (accessibility pass, testing, docs, i18n), M5 is in progress (v1.0 release hygiene: Biome lint, changelog, tag). The dashboard, API, and tests are all real and runnable today - see [Quick start](#quick-start).
+**v1.0.0 released.** Milestones M0 through M5 are done: engine, read-only dashboard, consent-driven fixes, local AI audit summary, accessibility pass + testing + docs + i18n, and v1.0 release hygiene (Biome lint, changelog, CI, trash-style cleanup). The dashboard, API, and tests are all real and runnable today - see [Quick start](#quick-start).
 
 ## Features
 
@@ -123,7 +123,7 @@ Current suite: **118 tests, all green** - 61 in `core` (checks, runner, history,
 | M2 | Consent-driven fixes: server endpoints + accessible web UI | Done |
 | M3 | Local AI audit summary (Ollama, privacy-sanitized prompt) + test runner | Done |
 | M4 | Accessibility pass + docs + centralized i18n (ES default / EN pack) + polish | Done |
-| M5 | v1.0.0 release + community announcement | In progress |
+| M5 | v1.0.0 release (Biome lint, changelog, CI, trash-style) + community announcement | Released |
 
 ## Contributing
 
