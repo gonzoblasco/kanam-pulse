@@ -1,4 +1,4 @@
-// src/core/history.js
+// src/core/history.ts
 // Persist run history to a local JSON file so health can be tracked over time.
 // Stores only the essential per-check scores + overall, not full details.
 
@@ -10,20 +10,36 @@ const HISTORY_DIR = () => path.join(os.homedir(), '.system-health-check');
 const HISTORY_FILE = () => path.join(HISTORY_DIR(), 'history.json');
 const MAX_ENTRIES = 100;
 
-/**
- * Ensure the history directory exists.
- */
-function ensureDir() {
+export interface CheckEntry {
+  id: string;
+  score: number;
+  status: string;
+}
+
+export interface BatterySummary {
+  timestamp: string;
+  overall: number;
+  status: string;
+  checks: CheckEntry[];
+}
+
+export interface TrendSummary {
+  count: number;
+  latest: number | null;
+  previous: number | null;
+  delta: number | null;
+  direction: string;
+}
+
+/** Ensure the history directory exists. */
+function ensureDir(): void {
   if (!fs.existsSync(HISTORY_DIR())) {
     fs.mkdirSync(HISTORY_DIR(), { recursive: true });
   }
 }
 
-/**
- * Read the full history from disk.
- * @returns {Array<object>}
- */
-export function readHistory() {
+/** Read the full history from disk. */
+export function readHistory(): BatterySummary[] {
   try {
     if (!fs.existsSync(HISTORY_FILE())) return [];
     const raw = fs.readFileSync(HISTORY_FILE(), 'utf-8');
@@ -34,15 +50,11 @@ export function readHistory() {
   }
 }
 
-/**
- * Append a run summary to history, keeping the most recent MAX_ENTRIES.
- * @param {object} battery - the runBattery result
- * @returns {Array<object>} the updated history
- */
-export function appendHistory(battery) {
+/** Append a run summary to history, keeping the most recent MAX_ENTRIES. */
+export function appendHistory(battery: BatterySummary): BatterySummary[] {
   ensureDir();
 
-  const entry = {
+  const entry: BatterySummary = {
     timestamp: battery.timestamp,
     overall: battery.overall,
     status: battery.status,
@@ -55,8 +67,6 @@ export function appendHistory(battery) {
 
   const history = readHistory();
   history.push(entry);
-
-  // Keep only the most recent MAX_ENTRIES.
   const trimmed = history.slice(-MAX_ENTRIES);
 
   try {
@@ -68,25 +78,14 @@ export function appendHistory(battery) {
   return trimmed;
 }
 
-/**
- * Compute a simple trend summary from history.
- * @param {Array<object>} [history]
- * @returns {{count:number, latest:number|null, previous:number|null, delta:number|null, direction:string}}
- */
-export function summarizeTrend(history = readHistory()) {
+/** Compute a simple trend summary from history. */
+export function summarizeTrend(history: BatterySummary[] = readHistory()): TrendSummary {
   if (history.length === 0) {
-    return {
-      count: 0,
-      latest: null,
-      previous: null,
-      delta: null,
-      direction: 'none',
-    };
+    return { count: 0, latest: null, previous: null, delta: null, direction: 'none' };
   }
 
   const latest = history[history.length - 1].overall;
-  const previous =
-    history.length >= 2 ? history[history.length - 2].overall : null;
+  const previous = history.length >= 2 ? history[history.length - 2].overall : null;
   const delta = previous !== null ? latest - previous : null;
 
   let direction = 'none';
@@ -99,9 +98,7 @@ export function summarizeTrend(history = readHistory()) {
   return { count: history.length, latest, previous, delta, direction };
 }
 
-/**
- * Get the path to the history file (for display/debug).
- */
-export function getHistoryPath() {
+/** Get the path to the history file (for display/debug). */
+export function getHistoryPath(): string {
   return HISTORY_FILE();
 }

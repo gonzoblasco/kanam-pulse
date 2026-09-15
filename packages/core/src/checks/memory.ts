@@ -1,61 +1,48 @@
-// src/checks/memory.js
+// src/checks/memory.ts
 // RAM health check using real macOS `vm_stat` telemetry.
-// Technique: parse page counts and compute Activity Monitor-accurate
-// memory usage (anonymous - purgeable = app memory).
 
 import os from 'node:os';
 import { runSafe } from '../core/exec.js';
+import type { CheckRunResult, CheckSuggestion } from './index.js';
 
-/**
- * Get accurate macOS RAM metrics matching Activity Monitor.
- * @returns {Promise<{total:number, used:number, free:number, percentage:number, appMemory:number, wired:number, compressed:number}|null>}
- */
-async function getMemoryStats() {
+interface MemoryStats {
+  total: number;
+  used: number;
+  free: number;
+  percentage: number;
+  appMemory: number;
+  wired: number;
+  compressed: number;
+}
+
+async function getMemoryStats(): Promise<MemoryStats | null> {
   const total = os.totalmem();
   const res = await runSafe('vm_stat');
   if (!res) return null;
 
   const pageSize = parseInt(
-    res.stdout.match(/page size of (\d+) bytes/)?.[1] || 16384,
+    res.stdout.match(/page size of (\d+) bytes/)?.[1] || '16384',
     10,
   );
-  const getPages = (key) => {
+  const getPages = (key: string): number => {
     const m = res.stdout.match(new RegExp(`${key}:\\s+(\\d+)\\.`));
     return m ? parseInt(m[1], 10) * pageSize : 0;
   };
 
-  const _free = getPages('Pages free') + getPages('Pages speculative');
-  const _active = getPages('Pages active');
+  const purgeable = getPages('Pages purgeable');
+  const anonymous = getPages('Anonymous pages');
   const wired = getPages('Pages wired down');
   const compressed = getPages('Pages occupied by compressor');
-  const purgeable = getPages('Pages purgeable');
-  const _fileBacked = getPages('File-backed pages');
-  const anonymous = getPages('Anonymous pages');
 
   const appMemory = Math.max(anonymous - purgeable, 0);
   const memoryUsed = appMemory + wired + compressed;
   const availableMem = Math.max(total - memoryUsed, 0);
-  const percentage = Math.min(
-    Math.max(Math.round((memoryUsed / total) * 100), 1),
-    100,
-  );
+  const percentage = Math.min(Math.max(Math.round((memoryUsed / total) * 100), 1), 100);
 
-  return {
-    total,
-    used: memoryUsed,
-    free: availableMem,
-    percentage,
-    appMemory,
-    wired,
-    compressed,
-  };
+  return { total, used: memoryUsed, free: availableMem, percentage, appMemory, wired, compressed };
 }
 
-/**
- * Detect memory pressure using the `memory_pressure` command when available.
- * @returns {Promise<string|null>} 'normal' | 'warning' | 'critical' | null
- */
-async function getMemoryPressure() {
+async function getMemoryPressure(): Promise<string | null> {
   const res = await runSafe('memory_pressure 2>/dev/null | tail -1');
   if (!res) return null;
   const out = res.stdout.toLowerCase();
@@ -65,18 +52,10 @@ async function getMemoryPressure() {
   return null;
 }
 
-/**
- * Run the memory health check.
- */
-export async function checkMemory() {
+export async function checkMemory(): Promise<CheckRunResult> {
   const stats = await getMemoryStats();
   if (!stats) {
-    return {
-      score: 0,
-      status: 'error',
-      details: { error: 'Could not read memory stats' },
-      suggestions: [],
-    };
+    return { score: 0, status: 'error', details: { error: 'Could not read memory stats' }, suggestions: [] };
   }
 
   const pressure = await getMemoryPressure();
@@ -87,7 +66,7 @@ export async function checkMemory() {
   else if (pressure === 'warning' || pct >= 80) score = 40;
   else if (pct >= 70) score = 60;
 
-  const suggestions = [];
+  const suggestions: CheckSuggestion[] = [];
   if (pct >= 80) {
     suggestions.push({
       priority: pct >= 90 ? 'high' : 'medium',
@@ -99,13 +78,8 @@ export async function checkMemory() {
 
   return {
     score,
-    status:
-      score >= 70
-        ? 'healthy'
-        : pressure === 'critical'
-          ? 'critical'
-          : 'warning',
-    details: { percentage: pct, pressure, ...stats },
+    status: score >= 70 ? 'healthy' : pressure === 'critical' ? 'critical' : 'warning',
+    details: { pressure, ...stats },
     suggestions,
   };
 }

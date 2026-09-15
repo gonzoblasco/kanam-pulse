@@ -1,26 +1,21 @@
-// src/audit/summary.js
+// src/audit/summary.ts
 // "Explain this audit": optional human-language summary of a battery run via
 // a local Ollama instance. Strictly privacy-preserving: the prompt carries
-// only aggregate metrics (overall score, status, per-check scores and
-// suggestion action text) - never user file paths, file contents, or
-// personal data. Everything degrades gracefully: if Ollama is not running,
-// the feature reports unavailable instead of throwing.
+// only aggregate metrics. Everything degrades gracefully.
 
 import os from 'node:os';
+import type { BatteryResult } from '../core/runner.js';
 
 const DEFAULT_BASE_URL = 'http://localhost:11434';
-// Fast cloud model via Ollama (Gonzo's default). Reasoning disabled per request
-// (see explainAudit body) so the visible answer gets the whole token budget.
-// Override with KANAM_PULSE_AI_MODEL env if desired.
 const DEFAULT_MODEL = process.env.KANAM_PULSE_AI_MODEL || 'deepseek-v4-flash:cloud';
 
-/**
- * Strip path-like content (absolute paths, home-dir references) from a text
- * fragment so no user file paths leak into a prompt.
- * @param {string} text
- * @returns {string}
- */
-function sanitizeText(text) {
+interface OllamaSummaryResult {
+  ok: boolean;
+  explanation?: string;
+  error?: string;
+}
+
+function sanitizeText(text: string): string {
   if (typeof text !== 'string') return '';
   let out = text.replaceAll(os.homedir(), '').replaceAll('~', '');
 
@@ -28,38 +23,22 @@ function sanitizeText(text) {
     .split(/\s+/)
     .filter((token) => {
       if (!token) return false;
-      // Tilde references (home) are personal context - drop them.
       if (/^~/.test(token)) return false;
-      // Absolute paths with 2+ segments: drop the whole token.
       if (token.startsWith('/') && token.split('/').length > 2) return false;
-      // Any lingering /Users/ or /home/ markers: drop.
       if (token.includes('/Users/') || token.includes('/home/')) return false;
       return true;
     })
     .join(' ');
 
-  // Belt-and-suspenders: never let the markers appear at all.
   out = out.replaceAll('/Users/', '').replaceAll('/home/', '');
   return out.trim();
 }
 
-/**
- * Build a summary-only prompt from a battery result.
- *
- * PRIVACY CONTRACT: the prompt contains aggregate metrics only:
- * - overall score + status
- * - per-check id, name, score and status (never `details`)
- * - suggestion action text, sanitized to drop any path-like content
- * No file paths, file contents or personal data are ever included.
- *
- * @param {object} battery - result of runBattery()
- * @returns {string}
- */
-export function buildAuditSummaryPrompt(battery) {
-  const b = battery && typeof battery === 'object' ? battery : {};
+export function buildAuditSummaryPrompt(battery: BatteryResult): string {
+  const b = battery && typeof battery === 'object' ? battery : ({} as BatteryResult);
   const checks = Array.isArray(b.checks) ? b.checks : [];
 
-  const lines = [];
+  const lines: string[] = [];
   lines.push(
     'You are a system health analyst. Summarize the following system health check audit in clear, friendly, non-technical human language. Keep it concise and actionable.',
   );
@@ -68,9 +47,7 @@ export function buildAuditSummaryPrompt(battery) {
   );
   lines.push('');
   lines.push('SYSTEM HEALTH AUDIT');
-  lines.push(
-    `Overall score: ${typeof b.overall === 'number' ? b.overall : 0}/100`,
-  );
+  lines.push(`Overall score: ${typeof b.overall === 'number' ? b.overall : 0}/100`);
   lines.push(`Status: ${b.status || 'unknown'}`);
   if (b.timestamp) lines.push(`Timestamp: ${b.timestamp}`);
   lines.push('');
@@ -91,9 +68,7 @@ export function buildAuditSummaryPrompt(battery) {
   lines.push('Suggestions (by check, priority, action):');
   let suggestionCount = 0;
   for (const check of checks) {
-    const suggestions = Array.isArray(check.suggestions)
-      ? check.suggestions
-      : [];
+    const suggestions = Array.isArray(check.suggestions) ? check.suggestions : [];
     for (const suggestion of suggestions) {
       const priority = suggestion.priority || 'low';
       const action = sanitizeText(suggestion.action);
@@ -114,24 +89,14 @@ export function buildAuditSummaryPrompt(battery) {
   return lines.join('\n');
 }
 
-/**
- * Build a fetch with an AbortController timeout.
- * @param {number} timeoutMs
- * @returns {{signal: AbortSignal, timer: ReturnType<typeof setTimeout>}}
- */
-function withTimeout(timeoutMs) {
+function withTimeout(timeoutMs: number): { signal: AbortSignal; timer: ReturnType<typeof setTimeout> } {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   return { signal: controller.signal, timer };
 }
 
-/**
- * Check whether a local Ollama instance is up.
- * @param {string} [baseUrl]
- * @returns {Promise<boolean>} true when /api/tags answers 200 with a models array.
- */
-export async function isOllamaAvailable(baseUrl = DEFAULT_BASE_URL) {
-  let response;
+export async function isOllamaAvailable(baseUrl: string = DEFAULT_BASE_URL): Promise<boolean> {
+  let response: Response;
   try {
     const { signal, timer } = withTimeout(2000);
     try {
@@ -139,44 +104,28 @@ export async function isOllamaAvailable(baseUrl = DEFAULT_BASE_URL) {
     } finally {
       clearTimeout(timer);
     }
-
     if (!response.ok) return false;
-    const payload = await response.json();
+    const payload = (await response.json()) as { models?: unknown };
     return Array.isArray(payload?.models);
   } catch {
-    // Network failure, timeout, bad JSON, or anything else: treat as unavailable.
     return false;
   }
 }
 
-/**
- * Summarize a battery run in human language via local Ollama.
- *
- * Never throws: always resolves to { ok: true, explanation } or
- * { ok: false, error }.
- *
- * @param {object} battery - result of runBattery()
- * @param {object} [options]
- * @param {string} [options.baseUrl='http://localhost:11434']
- * @param {string} [options.model='deepseek-v4-flash:cloud'] - Ollama model (or $KANAM_PULSE_AI_MODEL)
- * @param {number} [options.maxTokens=300]
- * @param {number} [options.timeoutMs=30000] - generation can take a while.
- * @returns {Promise<{ok:boolean, explanation?:string, error?:string}>}
- */
 export async function explainAudit(
-  battery,
+  battery: BatteryResult,
   {
     baseUrl = DEFAULT_BASE_URL,
     model = DEFAULT_MODEL,
     maxTokens = 300,
     timeoutMs = 30000,
-  } = {},
-) {
+  }: { baseUrl?: string; model?: string; maxTokens?: number; timeoutMs?: number } = {},
+): Promise<OllamaSummaryResult> {
   if (!battery || typeof battery !== 'object') {
     return { ok: false, error: 'invalid battery' };
   }
 
-  let response;
+  let response: Response;
   try {
     const prompt = buildAuditSummaryPrompt(battery);
     const { signal, timer } = withTimeout(timeoutMs);
@@ -188,10 +137,6 @@ export async function explainAudit(
           model,
           prompt,
           stream: false,
-          // Disable chain-of-thought reasoning: many local models (Qwen 3.5,
-          // GLM) emit a long `thinking` field that consumes num_predict and
-          // leaves `response` empty. `think:false` keeps the budget for the
-          // visible answer. Unknown models ignore the flag in Ollama.
           think: false,
           options: { num_predict: maxTokens },
         }),
@@ -202,26 +147,16 @@ export async function explainAudit(
     }
 
     if (!response.ok) {
-      return {
-        ok: false,
-        error: `ollama generate failed: HTTP ${response.status}`,
-      };
+      return { ok: false, error: `ollama generate failed: HTTP ${response.status}` };
     }
 
-    const payload = await response.json();
-    const explanation =
-      typeof payload.response === 'string' ? payload.response.trim() : '';
-    if (!explanation) {
-      return { ok: false, error: 'ollama returned an empty response' };
-    }
+    const payload = (await response.json()) as { response?: unknown };
+    const explanation = typeof payload.response === 'string' ? payload.response.trim() : '';
+    if (!explanation) return { ok: false, error: 'ollama returned an empty response' };
     return { ok: true, explanation };
   } catch (err) {
-    const reason =
-      err && err.name === 'AbortError'
-        ? 'timeout'
-        : err?.message
-          ? err.message
-          : String(err);
+    const e = err as { name?: string; message?: string };
+    const reason = e?.name === 'AbortError' ? 'timeout' : e?.message ? e.message : String(err);
     return { ok: false, error: `ollama unavailable: ${reason}` };
   }
 }

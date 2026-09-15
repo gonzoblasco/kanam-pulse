@@ -1,11 +1,10 @@
-// src/fix/processes.js
+// src/fix/processes.ts
 // Safe process management for the --fix mode.
 // Lists heavy processes and kills them ONLY with explicit confirmation.
 // Never kills: the current process, PID 1, or system-critical processes.
 
 import { runSafe } from '../core/exec.js';
 
-// Processes that should never be killed, even if heavy.
 const PROTECTED = new Set([
   'kernel_task',
   'launchd',
@@ -18,8 +17,6 @@ const PROTECTED = new Set([
   'init',
 ]);
 
-// Transient diagnostic commands this tool itself spawns (du, ps, etc.).
-// These show up as heavy during a scan but are not real user load.
 const DIAGNOSTIC_COMMANDS = new Set([
   'du',
   'ps',
@@ -35,19 +32,25 @@ const DIAGNOSTIC_COMMANDS = new Set([
   'memory_pressure',
 ]);
 
-/**
- * List processes sorted by CPU usage, excluding protected/system ones.
- * @param {number} [limit]
- * @returns {Promise<Array<{pid:number, command:string, cpuPct:number, memPct:number}>>}
- */
-export async function listHeavyProcesses(limit = 8) {
-  const res = await runSafe(
-    `ps -Aceo pid,pcpu,pmem,comm -r | head -${limit + 1}`,
-  );
+export interface HeavyProcess {
+  pid: number;
+  command: string;
+  cpuPct: number;
+  memPct: number;
+}
+
+export interface KillResult {
+  ok: boolean;
+  error?: string;
+}
+
+/** List processes sorted by CPU usage, excluding protected/system ones. */
+export async function listHeavyProcesses(limit = 8): Promise<HeavyProcess[]> {
+  const res = await runSafe(`ps -Aceo pid,pcpu,pmem,comm -r | head -${limit + 1}`);
   if (!res) return [];
 
   const currentPid = process.pid;
-  const rows = [];
+  const rows: HeavyProcess[] = [];
 
   for (const line of res.stdout.split('\n').slice(1)) {
     if (!line.trim()) continue;
@@ -57,7 +60,6 @@ export async function listHeavyProcesses(limit = 8) {
     const memPct = Number(parts[2]);
     const command = parts.slice(3).join(' ');
 
-    // Skip: current process, protected names, diagnostic commands, and anything we can't parse.
     if (pid === currentPid) continue;
     if (PROTECTED.has(command)) continue;
     if (DIAGNOSTIC_COMMANDS.has(command)) continue;
@@ -69,26 +71,15 @@ export async function listHeavyProcesses(limit = 8) {
   return rows;
 }
 
-/**
- * Kill a process by PID. Only called after explicit confirmation.
- * @param {number} pid
- * @returns {Promise<{ok:boolean, error?:string}>}
- */
-export async function killProcess(pid) {
+/** Kill a process by PID. Only called after explicit confirmation. */
+export async function killProcess(pid: number): Promise<KillResult> {
   const res = await runSafe(`kill ${pid} 2>&1`);
-  if (!res) {
-    return { ok: false, error: 'kill command failed' };
-  }
-  // kill exits 0 on success; runSafe returns null on non-zero exit.
+  if (!res) return { ok: false, error: 'kill command failed' };
   return { ok: true };
 }
 
-/**
- * Scan for heavy processes worth killing.
- * @param {number} [cpuThreshold] - only flag processes above this CPU %
- * @returns {Promise<Array<{pid:number, command:string, cpuPct:number, memPct:number}>>}
- */
-export async function scanHeavyProcesses(cpuThreshold = 20) {
+/** Scan for heavy processes worth killing. */
+export async function scanHeavyProcesses(cpuThreshold = 20): Promise<HeavyProcess[]> {
   const all = await listHeavyProcesses(15);
   return all.filter((p) => p.cpuPct >= cpuThreshold);
 }

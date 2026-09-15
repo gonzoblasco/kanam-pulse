@@ -1,14 +1,18 @@
-// src/utils/format.js
+// src/utils/format.ts
 // Pure formatting helpers - keep these pure so they are unit-testable.
 
 const BYTE_UNITS = ['B', 'KB', 'MB', 'GB', 'TB'];
 
-/**
- * Format a byte count into a human-readable string.
- * @param {number} bytes
- * @returns {string}
- */
-export function formatBytes(bytes) {
+export type ScoreStatus = 'healthy' | 'good' | 'attention' | 'critical';
+export type StatusKey = 'healthy' | 'good' | 'attention' | 'critical' | 'warning' | 'degraded' | 'error';
+
+export interface Suggestion {
+  priority?: string;
+  action: string;
+}
+
+/** Format a byte count into a human-readable string. */
+export function formatBytes(bytes: number): string {
   if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
   if (bytes === 0) return '0 B';
 
@@ -22,25 +26,17 @@ export function formatBytes(bytes) {
   return `${str} ${BYTE_UNITS[unit]}`;
 }
 
-/**
- * Map a 0-100 score to a status label.
- * @param {number} score
- * @returns {'healthy'|'good'|'attention'|'critical'}
- */
-export function scoreStatus(score) {
+/** Map a 0-100 score to a status label. */
+export function scoreStatus(score: number): ScoreStatus {
   if (score >= 85) return 'healthy';
   if (score >= 70) return 'good';
   if (score >= 40) return 'attention';
   return 'critical';
 }
 
-/**
- * Human labels for the numeric status we use in checks.
- * @param {string} status
- * @returns {string}
- */
-export function statusLabel(status) {
-  const map = {
+/** Human labels for the numeric status we use in checks. */
+export function statusLabel(status: string): string {
+  const map: Record<string, string> = {
     healthy: 'HEALTHY',
     good: 'GOOD',
     attention: 'ATTENTION',
@@ -52,12 +48,8 @@ export function statusLabel(status) {
   return map[status] ?? String(status).toUpperCase();
 }
 
-/**
- * Render a suggestion as a single-line string.
- * @param {object} s
- * @returns {string}
- */
-export function formatSuggestion(s) {
+/** Render a suggestion as a single-line string. */
+export function formatSuggestion(s: Suggestion): string {
   const tag = (s.priority || 'low').toUpperCase().padEnd(7);
   return `[${tag}] ${s.action}`;
 }
